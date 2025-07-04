@@ -94,6 +94,25 @@ public fun withdraw_all(auction: &mut Auction, _: &AdminCap, ctx: &mut TxContext
     transfer::public_transfer(sui_coin, ctx.sender());
 }
 
+
+// ====================== User's method ===================================
+
+fun is_auction_time(auction: &Auction, clock: &Clock) : bool{
+    let current_timestamp = clock.timestamp_ms();
+    auction.start_timestamp_ms() <= current_timestamp && current_timestamp <= auction.end_timestamp_ms()
+}
+
+public fun bid(auction: &mut Auction, bid: Coin<SUI>, clock: &Clock) {
+    assert!(auction.status() == Active);
+    assert!(auction.is_auction_time(clock));
+
+    // TODO: Implement logic for bid
+
+    let bid_balance = bid.into_balance();
+    auction.vault.join(bid_balance);
+}
+
+
 #[test_only]
 public fun init_for_test(ctx: &mut TxContext): AdminCap {
     AdminCap {
