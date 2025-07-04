@@ -28,7 +28,7 @@ fun create_auction_happy_case() {
     let admin_cap = init_for_test(ctx);
     let clock = clock::create_for_testing(ctx);
 
-    let total_item = 10;
+    let total_item = 5;
     let start_timestamp = 100;
     let duration = 100;
     create_auction(&admin_cap, total_item, start_timestamp, duration, &clock, ctx);
@@ -41,7 +41,7 @@ fun create_auction_happy_case() {
     assert_eq!(auction.start_timestamp_ms(), start_timestamp);
     assert_eq!(auction.end_timestamp_ms(), 200);
     assert_eq!(auction.status(), Scheduled);
-
+    assert_eq!(auction.bid_winners(), vector[0, 0, 0, 0, 0, 0]);
     destroy(admin_cap);
     destroy(clock);
     destroy(auction);
