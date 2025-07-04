@@ -9,6 +9,8 @@ use sui::sui::SUI;
 const ETryFinalizeWhenAuctionIsOpen: u64 = 1;
 const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
+const EBidNotGreaterFloorPrice: u64 = 4;
+const EBidNotPassAuctionPrice: u64 = 5;
 
 const Scheduled: u8 = 0;
 const Active: u8 = 1;
@@ -71,7 +73,7 @@ public fun create_auction(
         total_item,
         start_timestamp_ms,
         end_timestamp_ms: start_timestamp_ms + duration,
-        bid_winners: vector::tabulate!(total_item + 1, |_| ONE_SUI),
+        bid_winners: vector::tabulate!(total_item + 1, |_| 0),
         vault: balance::zero(),
     };
 
@@ -105,13 +107,22 @@ fun is_auction_time(auction: &Auction, clock: &Clock): bool {
     auction.start_timestamp_ms() <= current_timestamp && current_timestamp <= auction.end_timestamp_ms()
 }
 
+
+public fun auction_price(auction: &Auction): u64 {
+    let total_item = auction.total_item();
+    auction.bid_winners[total_item]
+}
+
 public fun bid(auction: &mut Auction, bid: Coin<SUI>, clock: &Clock) {
     assert!(auction.status() == Active);
     assert!(auction.is_auction_time(clock));
 
+    let bid_balance = bid.into_balance();
+    assert!(bid_balance.value() >= ONE_SUI, EBidNotGreaterFloorPrice);
+    assert!(bid_balance.value() > auction.auction_price(), EBidNotPassAuctionPrice);
+
     // TODO: Implement logic for bid
 
-    let bid_balance = bid.into_balance();
     auction.vault.join(bid_balance);
 }
 
