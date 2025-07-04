@@ -7,7 +7,7 @@ use sui::clock;
 use sui::test_scenario::{Self, take_shared};
 use sui::test_utils::destroy;
 
-// redefine constant status. Sui Move don't allow export constant
+// redefine constant status. Sui Move doesn't allow exporting constants
 const Scheduled: u8 = 0;
 const Active: u8 = 1;
 const Pause: u8 = 2;

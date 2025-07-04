@@ -6,8 +6,8 @@ use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 
-const ETryFinalizeWhenAuctionTimeOpen: u64 = 1;
-const EAuctionNotFinalize: u64 = 2;
+const ETryFinalizeWhenAuctionIsOpen: u64 = 1;
+const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
 
 const Scheduled: u8 = 0;
