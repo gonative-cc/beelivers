@@ -1,7 +1,13 @@
 #[test_only]
 module beelivers_auction::admin_tests;
 
-use beelivers_auction::beelivers_auction::{init_for_test, create_auction, Auction, EInvaidAuctionDuration, ETryFinalizeWhenAuctionIsOpen} ;
+use beelivers_auction::beelivers_auction::{
+    init_for_test,
+    create_auction,
+    Auction,
+    EInvaidAuctionDuration,
+    ETryFinalizeWhenAuctionIsOpen
+};
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::test_scenario::{Self, take_shared};
@@ -61,7 +67,6 @@ fun create_auction_invalid_timestamp_should_fail() {
     abort
 }
 
-
 #[test]
 fun status_setting_happy_case() {
     let sender = @0x01;
@@ -87,7 +92,6 @@ fun status_setting_happy_case() {
     auction.activate(&admin_cap);
     assert_eq!(auction.status(), Active);
 
-
     clock.set_for_testing(300);
     auction.finalize(&admin_cap, &clock);
     assert_eq!(auction.status(), Finalized);
@@ -100,7 +104,6 @@ fun status_setting_happy_case() {
 
 #[test, expected_failure(abort_code = ETryFinalizeWhenAuctionIsOpen)]
 fun set_status_finalize_when_timestamp_invalid_should_fail() {
-
     let sender = @0x01;
     let mut scenario = test_scenario::begin(sender);
     let ctx = scenario.ctx();

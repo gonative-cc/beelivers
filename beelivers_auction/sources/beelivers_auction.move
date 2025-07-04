@@ -15,6 +15,8 @@ const Active: u8 = 1;
 const Pause: u8 = 2;
 const Finalized: u8 = 3;
 
+const ONE_SUI: u64 = 1_000_000_000;
+
 public struct AdminCap has key, store {
     id: UID,
 }
@@ -26,6 +28,7 @@ public struct Auction has key, store {
     total_item: u64,
     start_timestamp_ms: u64,
     end_timestamp_ms: u64,
+    bid_winners: vector<u64>,
     vault: Balance<SUI>,
 }
 
@@ -68,6 +71,7 @@ public fun create_auction(
         total_item,
         start_timestamp_ms,
         end_timestamp_ms: start_timestamp_ms + duration,
+        bid_winners: vector::tabulate!(total_item + 1, |_| ONE_SUI),
         vault: balance::zero(),
     };
 
@@ -94,10 +98,9 @@ public fun withdraw_all(auction: &mut Auction, _: &AdminCap, ctx: &mut TxContext
     transfer::public_transfer(sui_coin, ctx.sender());
 }
 
-
 // ====================== User's method ===================================
 
-fun is_auction_time(auction: &Auction, clock: &Clock) : bool{
+fun is_auction_time(auction: &Auction, clock: &Clock): bool {
     let current_timestamp = clock.timestamp_ms();
     auction.start_timestamp_ms() <= current_timestamp && current_timestamp <= auction.end_timestamp_ms()
 }
@@ -111,7 +114,6 @@ public fun bid(auction: &mut Auction, bid: Coin<SUI>, clock: &Clock) {
     let bid_balance = bid.into_balance();
     auction.vault.join(bid_balance);
 }
-
 
 #[test_only]
 public fun init_for_test(ctx: &mut TxContext): AdminCap {
