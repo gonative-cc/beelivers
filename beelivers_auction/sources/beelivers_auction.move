@@ -78,7 +78,7 @@ public fun pause(auction: &mut Auction, _: &AdminCap) {
     auction.status = Pause;
 }
 
-public fun active(auction: &mut Auction, _: &AdminCap) {
+public fun activate(auction: &mut Auction, _: &AdminCap) {
     auction.status = Active;
 }
 
