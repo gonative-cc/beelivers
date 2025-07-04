@@ -83,12 +83,12 @@ public fun active(auction: &mut Auction, _: &AdminCap) {
 }
 
 public fun finalize(auction: &mut Auction, _: &AdminCap, clock: &Clock) {
-    assert!(clock.timestamp_ms() >= auction.end_timestamp_ms, ETryFinalizeWhenAuctionTimeOpen);
+    assert!(clock.timestamp_ms() >= auction.end_timestamp_ms, ETryFinalizeWhenAuctionIsOpen);
     auction.status = Finalized
 }
 
 public fun withdraw_all(auction: &mut Auction, _: &AdminCap, ctx: &mut TxContext) {
-    assert!(auction.status == Finalized, EAuctionNotFinalize);
+    assert!(auction.status == Finalized, EAuctionNotFinalized);
     let total_balance = auction.vault.value();
     let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
     transfer::public_transfer(sui_coin, ctx.sender());
