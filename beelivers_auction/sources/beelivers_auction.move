@@ -57,6 +57,10 @@ public fun total_item(auction: &Auction): u64 {
     auction.total_item
 }
 
+public fun bid_winners(auction: &Auction): vector<u64> {
+    auction.bid_winners
+}
+
 // ==================== Admin methods ===================================
 public fun create_auction(
     _: &AdminCap,
@@ -113,6 +117,7 @@ public fun auction_price(auction: &Auction): u64 {
     auction.bid_winners[total_item]
 }
 
+// bid check record from user and
 public fun bid(auction: &mut Auction, bid: Coin<SUI>, clock: &Clock) {
     assert!(auction.status() == Active);
     assert!(auction.is_auction_time(clock));
@@ -121,9 +126,27 @@ public fun bid(auction: &mut Auction, bid: Coin<SUI>, clock: &Clock) {
     assert!(bid_balance.value() >= ONE_SUI, EBidNotGreaterFloorPrice);
     assert!(bid_balance.value() > auction.auction_price(), EBidNotPassAuctionPrice);
 
-    // TODO: Implement logic for bid
+    auction.process_bid(bid_balance.value());
 
     auction.vault.join(bid_balance);
+}
+
+
+// update the bid winner
+public(package) fun process_bid(auction: &mut Auction, bid_value: u64) {
+    let total_item = auction.total_item();
+    let auction_price = auction.bid_winners.borrow_mut(total_item);
+    *auction_price = bid_value;
+
+    let mut i = total_item;
+    while (i > 0) {
+        if (auction.bid_winners[i] > auction.bid_winners[i - 1]) {
+            auction.bid_winners.swap(i, i - 1);
+        } else {
+            break
+        };
+        i = i - 1;
+    }
 }
 
 #[test_only]
