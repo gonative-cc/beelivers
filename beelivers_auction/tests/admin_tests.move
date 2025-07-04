@@ -1,13 +1,13 @@
 #[test_only]
 module beelivers_auction::admin_tests;
 
-use beelivers_auction::beelivers_auction::{init_for_test, create_auction, Auction, EInvaidAuctionDuration,ETryFinalizeWhenAuctionTimeOpen} ;
+use beelivers_auction::beelivers_auction::{init_for_test, create_auction, Auction, EInvaidAuctionDuration, ETryFinalizeWhenAuctionIsOpen} ;
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::test_scenario::{Self, take_shared};
 use sui::test_utils::destroy;
 
-// redefine constant status. Sui Move don't allow export constant
+// redefine constant status. Sui Move doesn't allow exporting constants
 const Scheduled: u8 = 0;
 const Active: u8 = 1;
 const Pause: u8 = 2;
@@ -84,7 +84,7 @@ fun status_setting_happy_case() {
     auction.pause(&admin_cap);
     assert_eq!(auction.status(), Pause);
 
-    auction.active(&admin_cap);
+    auction.activate(&admin_cap);
     assert_eq!(auction.status(), Active);
 
 
@@ -98,7 +98,7 @@ fun status_setting_happy_case() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = ETryFinalizeWhenAuctionTimeOpen)]
+#[test, expected_failure(abort_code = ETryFinalizeWhenAuctionIsOpen)]
 fun set_status_finalize_when_timestamp_invalid_should_fail() {
 
     let sender = @0x01;

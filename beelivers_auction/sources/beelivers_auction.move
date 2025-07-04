@@ -6,8 +6,8 @@ use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::sui::SUI;
 
-const ETryFinalizeWhenAuctionTimeOpen: u64 = 1;
-const EAuctionNotFinalize: u64 = 2;
+const ETryFinalizeWhenAuctionIsOpen: u64 = 1;
+const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
 
 const Scheduled: u8 = 0;
@@ -78,17 +78,17 @@ public fun pause(auction: &mut Auction, _: &AdminCap) {
     auction.status = Pause;
 }
 
-public fun active(auction: &mut Auction, _: &AdminCap) {
+public fun activate(auction: &mut Auction, _: &AdminCap) {
     auction.status = Active;
 }
 
 public fun finalize(auction: &mut Auction, _: &AdminCap, clock: &Clock) {
-    assert!(clock.timestamp_ms() >= auction.end_timestamp_ms, ETryFinalizeWhenAuctionTimeOpen);
+    assert!(clock.timestamp_ms() >= auction.end_timestamp_ms, ETryFinalizeWhenAuctionIsOpen);
     auction.status = Finalized
 }
 
 public fun withdraw_all(auction: &mut Auction, _: &AdminCap, ctx: &mut TxContext) {
-    assert!(auction.status == Finalized, EAuctionNotFinalize);
+    assert!(auction.status == Finalized, EAuctionNotFinalized);
     let total_balance = auction.vault.value();
     let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
     transfer::public_transfer(sui_coin, ctx.sender());
