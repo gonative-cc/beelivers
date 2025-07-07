@@ -19,6 +19,9 @@ public struct AdminCap has key, store {
     id: UID,
 }
 
+// One day in MS
+const ONE_DAY: u64 = 24 * 60 * 60 * 1000;
+
 // Auction object manage all partial object.
 public struct Auction has key, store {
     id: UID,
@@ -57,7 +60,7 @@ public fun number_items(auction: &Auction): u64 {
 }
 
 // ==================== Admin methods ===================================
-public fun create_auction(
+public fun sub_auction(
     _: &AdminCap,
     number_items: u64,
     starts_at: u64,
@@ -71,13 +74,18 @@ public fun create_auction(
         status: Scheduled,
         number_items,
         starts_at,
-        ends_at: starts_at + duration,
+        ends_at: starts_at + duration - 1,
         vault: balance::zero(),
     };
 
     transfer::public_share_object(auction)
 }
 
+public fun new_auction(_: &AdminCap, number_items: u64, number_sub_auctions: u64, starts_at: u64, clock: &Clock, ctx: &mut TxContext) {
+    number_sub_auctions.do!(|i| {
+        sub_auction(_, number_items, starts_at + i * ONE_DAY, ONE_DAY, clock, ctx);
+    });
+}
 public fun pause(auction: &mut Auction, _: &AdminCap) {
     auction.status = Pause;
 }
