@@ -23,7 +23,7 @@ public struct AdminCap has key, store {
 public struct Auction has key, store {
     id: UID,
     status: u8,
-    total_item: u64,
+    number_items: u64,
     /// timestamp in ms
     starts_at: u64,
     /// timestamp in ms
@@ -44,34 +44,34 @@ public fun status(auction: &Auction): u8 {
 
 /// returns auction start timestamp in ms
 public fun starts_at(auction: &Auction): u64 {
-    auction.start_timestamp_ms
+    auction.starts_at
 }
 
 /// returns auction end timestamp in ms
 public fun ends_at(auction: &Auction): u64 {
-    auction.end_timestamp_ms
+    auction.ends_at
 }
 
-public fun total_items(auction: &Auction): u64 {
-    auction.total_item
+public fun number_items(auction: &Auction): u64 {
+    auction.number_items
 }
 
 // ==================== Admin methods ===================================
 public fun create_auction(
     _: &AdminCap,
-    total_item: u64,
-    start_timestamp_ms: u64,
+    number_items: u64,
+    starts_at: u64,
     duration: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(start_timestamp_ms > clock.timestamp_ms(), EInvaidAuctionDuration);
+    assert!(starts_at > clock.timestamp_ms(), EInvaidAuctionDuration);
     let auction = Auction {
         id: object::new(ctx),
         status: Scheduled,
-        total_item,
-        start_timestamp_ms,
-        end_timestamp_ms: start_timestamp_ms + duration,
+        number_items,
+        starts_at,
+        ends_at: starts_at + duration,
         vault: balance::zero(),
     };
 
@@ -86,9 +86,8 @@ public fun activate(auction: &mut Auction, _: &AdminCap) {
     auction.status = Active;
 }
 
-public fun finalize(auction: &mut Auction, _: &AdminCap, clock: &Clock) {
-    assert!(clock.timestamp_ms() >= auction.end_timestamp_ms, ETryFinalizeWhenAuctionIsOpen);
-    auction.status = Finalized
+public fun isFinalized(auction: &mut Auction, _: &AdminCap, clock: &Clock) {
+    assert!(clock.timestamp_ms() >= auction.ends_at(), ETryFinalizeWhenAuctionIsOpen);
 }
 
 public fun withdraw_all(auction: &mut Auction, _: &AdminCap, ctx: &mut TxContext) {
