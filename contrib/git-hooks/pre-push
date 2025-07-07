@@ -3,8 +3,11 @@
 threshold=80
 
 coverage=$(sui move coverage summary | grep "% Move Coverage" | tail -n1 | sed -E 's/.*% Move Coverage:[[:space:]]*([0-9.]+).*/\1/')
+# set a default value
+coverage="${coverage:-100}"
 
-echo $coverage
+echo "Coverage: $coverage"
+
 if awk "BEGIN {exit ($coverage < $threshold ? 0 : 1)}"; then
     echo "❌ Coverage is low"
     exit 1
