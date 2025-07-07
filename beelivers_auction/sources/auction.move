@@ -91,12 +91,21 @@ public fun sub_auction(
     transfer::public_share_object(auction)
 }
 
-public fun new_auction(_: &AdminCap, status: &mut AuctionStatus, number_items: u64, number_sub_auctions: u64, starts_at: u64, clock: &Clock, ctx: &mut TxContext) {
+public fun new_auction(
+    _: &AdminCap,
+    status: &mut AuctionStatus,
+    number_items: u64,
+    number_sub_auctions: u64,
+    starts_at: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
     status.status = Scheduled;
     number_sub_auctions.do!(|i| {
         sub_auction(_, number_items, starts_at + i * ONE_DAY, ONE_DAY, clock, ctx);
     });
 }
+
 public fun pause(status: &mut AuctionStatus, _: &AdminCap) {
     status.status = Pause;
 }
