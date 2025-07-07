@@ -24,8 +24,10 @@ public struct Auction has key, store {
     id: UID,
     status: u8,
     total_item: u64,
-    start_timestamp_ms: u64,
-    end_timestamp_ms: u64,
+    /// timestamp in ms
+    starts_at: u64,
+    /// timestamp in ms
+    ends_at: u64,
     vault: Balance<SUI>,
 }
 
@@ -40,15 +42,17 @@ public fun status(auction: &Auction): u8 {
     auction.status
 }
 
-public fun start_timestamp_ms(auction: &Auction): u64 {
+/// returns auction start timestamp in ms
+public fun starts_at(auction: &Auction): u64 {
     auction.start_timestamp_ms
 }
 
-public fun end_timestamp_ms(auction: &Auction): u64 {
+/// returns auction end timestamp in ms
+public fun ends_at(auction: &Auction): u64 {
     auction.end_timestamp_ms
 }
 
-public fun total_item(auction: &Auction): u64 {
+public fun total_items(auction: &Auction): u64 {
     auction.total_item
 }
 
