@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 /*
 #[test_only]
 module beelivers_auction::beelivers_auction_tests;
