@@ -5,6 +5,8 @@ use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::sui::SUI;
+use sui::table::{Self, Table};
+
 
 const ETryFinalizeWhenAuctionIsOpen: u64 = 1;
 const EAuctionNotFinalized: u64 = 2;
@@ -32,6 +34,7 @@ public struct Auction has key, store {
     end_timestamp_ms: u64,
     bid_winners: vector<u64>,
     vault: Balance<SUI>,
+    balances: Table<address, u64>
 }
 
 fun init(ctx: &mut TxContext) {
@@ -79,6 +82,7 @@ public fun create_auction(
         end_timestamp_ms: start_timestamp_ms + duration,
         bid_winners: vector::tabulate!(total_item + 1, |_| 0),
         vault: balance::zero(),
+        balances: table::new(ctx)
     };
 
     transfer::public_share_object(auction)
