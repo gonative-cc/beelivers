@@ -1,0 +1,45 @@
+name: JS
+on:
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+    paths:
+      - '**.js'
+      - '**.ts'
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      ### version with cache
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+      ###
+
+      - name: eslint
+        run: "pnpm run lint"
+
+      - name: typecheck
+        run: "pnpm run typecheck"
+
+      - name: build
+        run: "pnpm run build"
+
+      - name: test
+        run: "pnpm run test"
