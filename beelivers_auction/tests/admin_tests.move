@@ -1,7 +1,13 @@
 #[test_only]
 module beelivers_auction::admin_tests;
 
-use beelivers_auction::beelivers_auction::{init_for_test, sub_auction, new_auction, Auction, EInvaidAuctionDuration} ;
+use beelivers_auction::beelivers_auction::{
+    init_for_test,
+    sub_auction,
+    new_auction,
+    Auction,
+    EInvaidAuctionDuration
+};
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::test_scenario::{Self, take_shared};
@@ -13,7 +19,6 @@ const Scheduled: u8 = 1;
 const Active: u8 = 2;
 const Pause: u8 = 3;
 const ONE_DAY: u64 = 24 * 60 * 60 * 1000;
-
 
 #[test]
 fun sub_auction_happy_case() {
@@ -50,7 +55,7 @@ fun sub_auction_invalid_timestamp_should_fail() {
     let mut scenario = test_scenario::begin(sender);
     let ctx = scenario.ctx();
 
-    let (_status,  admin_cap) = init_for_test(ctx);
+    let (_status, admin_cap) = init_for_test(ctx);
     let mut clock = clock::create_for_testing(ctx);
 
     clock.set_for_testing(120);
@@ -60,10 +65,8 @@ fun sub_auction_invalid_timestamp_should_fail() {
     let duration = 100;
     sub_auction(&admin_cap, number_items, start_timestamp, duration, &clock, ctx);
 
-
     abort
 }
-
 
 #[test]
 fun status_setting_happy_case() {
@@ -71,7 +74,7 @@ fun status_setting_happy_case() {
     let mut scenario = test_scenario::begin(sender);
     let ctx = scenario.ctx();
 
-    let (mut status ,admin_cap) = init_for_test(ctx);
+    let (mut status, admin_cap) = init_for_test(ctx);
 
     assert_eq!(status.status(), UnScheduled);
 
@@ -87,14 +90,13 @@ fun status_setting_happy_case() {
     scenario.end();
 }
 
-
 #[test]
 fun new_auction_happy_case() {
     let sender = @0x01;
     let mut scenario = test_scenario::begin(sender);
     let ctx = scenario.ctx();
     let clock = clock::create_for_testing(ctx);
-    let (mut status ,admin_cap) = init_for_test(ctx);
+    let (mut status, admin_cap) = init_for_test(ctx);
 
     assert_eq!(status.status(), UnScheduled);
 
