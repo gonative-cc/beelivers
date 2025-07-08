@@ -9,10 +9,6 @@ use sui::sui::SUI;
 const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
 
-const UnScheduled: u8 = 0;
-const Scheduled: u8 = 1;
-const Active: u8 = 2;
-const Pause: u8 = 3;
 
 // One day in MS
 const ONE_DAY: u64 = 24 * 60 * 60 * 1000;
@@ -23,13 +19,13 @@ public struct AdminCap has key, store {
 
 public struct AuctionStatus has key, store {
     id: UID,
-    status: u8,
+    paused: bool,
 }
 
 // Auction object manage all partial object.
 public struct Auction has key, store {
     id: UID,
-    number_items: u64,
+    size: u32,
     /// timestamp in ms
     starts_at: u64,
     /// timestamp in ms
@@ -66,20 +62,20 @@ public fun ends_at(auction: &Auction): u64 {
     auction.ends_at
 }
 
-public fun number_items(auction: &Auction): u64 {
-    auction.number_items
+public fun size(auction: &Auction): u64 {
+    auction.size
 }
 
 // ==================== Admin methods ===================================
-public fun sub_auction(
+fun new_auction(
     _: &AdminCap,
-    number_items: u64,
+    szie: u64,
     starts_at: u64,
     duration: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(starts_at > clock.timestamp_ms(), EInvaidAuctionDuration);
+    assert!(starts_at > clock.timestamp_ms() + 3600*1000, EInvaidAuctionDuration); // must start at least 1h in the future
     let auction = Auction {
         id: object::new(ctx),
         number_items,
@@ -91,11 +87,11 @@ public fun sub_auction(
     transfer::public_share_object(auction)
 }
 
-public fun new_auction(
+public fun new_auctions(
     _: &AdminCap,
     status: &mut AuctionStatus,
-    number_items: u64,
-    number_sub_auctions: u64,
+    size_per_auction: u32,
+    number_of_auctions: u32,
     starts_at: u64,
     clock: &Clock,
     ctx: &mut TxContext,
