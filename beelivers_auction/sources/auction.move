@@ -12,6 +12,7 @@ const EInvaidAuctionDuration: u64 = 3;
 
 // One day in MS
 const ONE_DAY: u64 = 24 * 60 * 60 * 1000;
+const ONE_HOUR: u64 = 60 * 60 *1000;
 
 public struct AdminCap has key, store {
     id: UID,
@@ -25,7 +26,7 @@ public struct AuctionStatus has key, store {
 // Auction object manage all partial object.
 public struct Auction has key, store {
     id: UID,
-    size: u32,
+    size: u64,
     /// timestamp in ms
     starts_at: u64,
     /// timestamp in ms
@@ -41,15 +42,15 @@ fun init(ctx: &mut TxContext) {
     // only admin can update status
     let status = AuctionStatus {
         id: object::new(ctx),
-        status: UnScheduled,
+        paused: false,
     };
 
     transfer::public_share_object(status);
     transfer::public_transfer(admin_cap, ctx.sender());
 }
 
-public fun status(status: &AuctionStatus): u8 {
-    status.status
+public fun is_pause(status: &AuctionStatus): bool {
+    status.paused
 }
 
 /// returns auction start timestamp in ms
@@ -67,18 +68,18 @@ public fun size(auction: &Auction): u64 {
 }
 
 // ==================== Admin methods ===================================
-fun new_auction(
+public(package) fun new_auction(
     _: &AdminCap,
-    szie: u64,
+    size: u64,
     starts_at: u64,
     duration: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(starts_at > clock.timestamp_ms() + 3600*1000, EInvaidAuctionDuration); // must start at least 1h in the future
+    assert!(starts_at >= clock.timestamp_ms() + ONE_HOUR, EInvaidAuctionDuration); // must start at least 1h in the future
     let auction = Auction {
         id: object::new(ctx),
-        number_items,
+        size,
         starts_at,
         ends_at: starts_at + duration - 1,
         vault: balance::zero(),
@@ -90,25 +91,22 @@ fun new_auction(
 public fun new_auctions(
     _: &AdminCap,
     status: &mut AuctionStatus,
-    size_per_auction: u32,
-    number_of_auctions: u32,
+    size_per_auction: u64,
+    number_of_auctions: u64,
     starts_at: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    status.status = Scheduled;
-    number_sub_auctions.do!(|i| {
-        sub_auction(_, number_items, starts_at + i * ONE_DAY, ONE_DAY, clock, ctx);
+    status.paused = false;
+    number_of_auctions.do!(|i| {
+        new_auction(_, size_per_auction, starts_at + i * ONE_DAY, ONE_DAY, clock, ctx);
     });
 }
 
-public fun pause(status: &mut AuctionStatus, _: &AdminCap) {
-    status.status = Pause;
+public fun set_pause(status: &mut AuctionStatus, _: &AdminCap, pause: bool) {
+    status.paused = pause;
 }
 
-public fun activate(status: &mut AuctionStatus, _: &AdminCap) {
-    status.status = Active;
-}
 
 public fun isFinalized(auction: &mut Auction, clock: &Clock): bool {
     clock.timestamp_ms() >= auction.ends_at()
@@ -129,7 +127,7 @@ public fun init_for_test(ctx: &mut TxContext): (AuctionStatus, AdminCap) {
 
     let status = AuctionStatus {
         id: object::new(ctx),
-        status: UnScheduled,
+        paused: false,
     };
 
     (status, admin_cap)
