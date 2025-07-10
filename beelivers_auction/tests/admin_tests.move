@@ -106,7 +106,7 @@ fun new_auctions_happy_case() {
 
     let mut i = number_per_auctions;
     loop {
-	// order when query share object is reverse.
+        // order when query share object is reverse.
         if (i == 0) {
             break
         };

@@ -9,7 +9,6 @@ use sui::sui::SUI;
 const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
 
-
 // One day in MS
 const ONE_HOUR: u64 = 60 * 60 *1000;
 const ONE_DAY: u64 = 24 * ONE_HOUR;
@@ -107,12 +106,16 @@ public fun set_pause(status: &mut AuctionStatus, _: &AdminCap, pause: bool) {
     status.paused = pause;
 }
 
-
 public fun is_finalized(auction: &mut Auction, clock: &Clock): bool {
     clock.timestamp_ms() >= auction.ends_at()
 }
 
-public fun withdraw_all(auction: &mut Auction, _: &AdminCap, clock: &Clock, ctx: &mut TxContext) {
+public fun withdraw_all(
+    auction: &mut Auction,
+    _: &AdminCap,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
     assert!(auction.is_finalized(clock), EAuctionNotFinalized);
     let total_balance = auction.vault.value();
     let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
