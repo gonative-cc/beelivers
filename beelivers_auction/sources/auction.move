@@ -11,8 +11,8 @@ const EInvaidAuctionDuration: u64 = 3;
 
 
 // One day in MS
-const ONE_DAY: u64 = 24 * 60 * 60 * 1000;
 const ONE_HOUR: u64 = 60 * 60 *1000;
+const ONE_DAY: u64 = 24 * ONE_HOUR;
 
 public struct AdminCap has key, store {
     id: UID,
@@ -108,7 +108,7 @@ public fun set_pause(status: &mut AuctionStatus, _: &AdminCap, pause: bool) {
 }
 
 
-public fun isFinalized(auction: &mut Auction, clock: &Clock): bool {
+public fun is_finalized(auction: &mut Auction, clock: &Clock): bool {
     clock.timestamp_ms() >= auction.ends_at()
 }
 
