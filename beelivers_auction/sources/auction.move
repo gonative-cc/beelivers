@@ -113,7 +113,7 @@ public fun is_finalized(auction: &mut Auction, clock: &Clock): bool {
 }
 
 public fun withdraw_all(auction: &mut Auction, _: &AdminCap, clock: &Clock, ctx: &mut TxContext) {
-    assert!(auction.isFinalized(clock), EAuctionNotFinalized);
+    assert!(auction.is_finalized(clock), EAuctionNotFinalized);
     let total_balance = auction.vault.value();
     let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
     transfer::public_transfer(sui_coin, ctx.sender());
