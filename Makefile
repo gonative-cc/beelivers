@@ -10,6 +10,6 @@ add-license:
 
 # used as pre-commit
 lint-git:
-#	@git diff --name-only --cached | grep  -E '\.md$$' | xargs -r markdownlint-cli2
-#	@git diff --name-only --cached | basedir | xargs -r markdownlint-cli2
-	@sui move build --lint
+	@git diff --name-only --cached | grep  -E '\.md$$' | xargs -r markdownlint-cli2
+	@git diff --name-only --cached | grep  -E '\.move$$' | xargs -r prettier-move -c
+#	@sui move build --lint
