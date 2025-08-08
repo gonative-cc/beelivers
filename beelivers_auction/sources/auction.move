@@ -13,6 +13,7 @@ use sui::table::{Self, Table};
 
 // One hour in milliseconds
 const ONE_HOUR: u64 = 60 * 60 *1000;
+const MIN_BID: u64 = 1000000000; // 1SUI = MIST_PER_SUI;
 
 // ======== Errors ========
 const ENotStarted: u64 = 1;
@@ -84,22 +85,8 @@ public fun is_finalized(auction: &mut Auction, clock: &Clock): bool {
     clock.timestamp_ms() >= auction.ends_at()
 }
 
-/// Withdraws all stored SUI
-public fun withdraw_all(
-    auction: &mut Auction,
-    _: &AdminCap,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    assert!(auction.is_finalized(clock), EEnded);
-    let total_balance = auction.vault.value();
-    let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
-    transfer::public_transfer(sui_coin, ctx.sender());
-}
-
 // ==================== Admin methods ===================================
 
-// #[allow(lint(self_transfer))]
 public(package) fun create_auction(
     _: &AdminCap,
     starts_at: u64,
@@ -121,6 +108,21 @@ public(package) fun create_auction(
     };
 
     transfer::public_share_object(auction)
+}
+
+/// Withdraws all stored SUI
+#[allow(lint(self_transfer))]
+public fun withdraw_auction_proceedings(
+    auction: &mut Auction,
+    _: &AdminCap,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(auction.is_finalized(clock), EEnded);
+    // TODO: compute the amount we can withdraw here
+    let total_balance = auction.vault.value();
+    let sui_coin = coin::take(&mut auction.vault, total_balance, ctx);
+    transfer::public_transfer(sui_coin, ctx.sender());
 }
 
 public fun set_paused(auction: &mut Auction, _: &AdminCap, pause: bool) {
