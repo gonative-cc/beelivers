@@ -71,7 +71,7 @@ fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
     let nft = NFT {
         id: object::new(ctx),
         name: b"Redacted Beeliever".to_string(),
-        description: b"https://www.gonative.cc/beelievers".to_string(),
+        description: b"www.gonative.cc/beelievers".to_string(),
         url: url::new_unsafe_from_bytes(b"https://todo-image-url.com"), // TODO, need to set URL
     };
 
