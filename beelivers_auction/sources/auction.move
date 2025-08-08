@@ -9,22 +9,18 @@ use sui::sui::SUI;
 const EAuctionNotFinalized: u64 = 2;
 const EInvaidAuctionDuration: u64 = 3;
 
-// One day in MS
+// One hour in milliseconds
 const ONE_HOUR: u64 = 60 * 60 *1000;
-const ONE_DAY: u64 = 24 * ONE_HOUR;
 
 public struct AdminCap has key, store {
     id: UID,
 }
 
-public struct AuctionStatus has key, store {
-    id: UID,
-    paused: bool,
-}
-
 // Auction object manage all partial object.
 public struct Auction has key, store {
     id: UID,
+    paused: bool,
+    /// number of items to bid
     size: u64,
     /// timestamp in ms
     starts_at: u64,
@@ -38,18 +34,7 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
     };
 
-    // only admin can update status
-    let status = AuctionStatus {
-        id: object::new(ctx),
-        paused: false,
-    };
-
-    transfer::public_share_object(status);
     transfer::public_transfer(admin_cap, ctx.sender());
-}
-
-public fun is_pause(status: &AuctionStatus): bool {
-    status.paused
 }
 
 /// returns auction start timestamp in ms
@@ -66,8 +51,12 @@ public fun size(auction: &Auction): u64 {
     auction.size
 }
 
+public fun is_paused(auction: &Auction): bool {
+    auction.paused
+}
+
 // ==================== Admin methods ===================================
-public(package) fun new_auction(
+public(package) fun initialize(
     _: &AdminCap,
     size: u64,
     starts_at: u64,
@@ -76,40 +65,28 @@ public(package) fun new_auction(
     ctx: &mut TxContext,
 ) {
     assert!(starts_at >= clock.timestamp_ms() + ONE_HOUR, EInvaidAuctionDuration); // must start at least 1h in the future
+    assert!(duration >= ONE_HOUR);
     let auction = Auction {
         id: object::new(ctx),
         size,
         starts_at,
         ends_at: starts_at + duration - 1,
+        paused: false,
         vault: balance::zero(),
     };
 
     transfer::public_share_object(auction)
 }
 
-public fun new_auctions(
-    _: &AdminCap,
-    status: &mut AuctionStatus,
-    size_per_auction: u64,
-    number_of_auctions: u64,
-    starts_at: u64,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    status.paused = false;
-    number_of_auctions.do!(|i| {
-        new_auction(_, size_per_auction, starts_at + i * ONE_DAY, ONE_DAY, clock, ctx);
-    });
-}
-
-public fun set_pause(status: &mut AuctionStatus, _: &AdminCap, pause: bool) {
-    status.paused = pause;
+public fun set_paused(auction: &mut Auction, _: &AdminCap, pause: bool) {
+    auction.paused = pause;
 }
 
 public fun is_finalized(auction: &mut Auction, clock: &Clock): bool {
     clock.timestamp_ms() >= auction.ends_at()
 }
 
+/// Withdraws all stored SUI
 public fun withdraw_all(
     auction: &mut Auction,
     _: &AdminCap,
@@ -123,15 +100,19 @@ public fun withdraw_all(
 }
 
 #[test_only]
-public fun init_for_test(ctx: &mut TxContext): (AuctionStatus, AdminCap) {
+public fun init_for_test(ctx: &mut TxContext): (Auction, AdminCap) {
     let admin_cap = AdminCap {
         id: object::new(ctx),
     };
 
-    let status = AuctionStatus {
+    let auction = Auction {
         id: object::new(ctx),
         paused: false,
+        size: 4,
+        starts_at: 10,
+        ends_at: 20,
+        vault: balance::create_for_testing(0),
     };
 
-    (status, admin_cap)
+    (auction, admin_cap)
 }
