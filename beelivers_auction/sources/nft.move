@@ -17,7 +17,7 @@ public struct NFT has key {
     /// Description of the token
     description: string::String,
     /// URL for the token
-    url: Url,
+    image_url: Url,
 }
 
 public struct AdminCap has key, store {
@@ -51,8 +51,8 @@ public fun description(nft: &NFT): &string::String {
     &nft.description
 }
 
-public fun url(nft: &NFT): &Url {
-    &nft.url
+public fun image_url(nft: &NFT): &Url {
+    &nft.image_url
 }
 
 // ===== Entrypoints and functions =====
@@ -72,7 +72,7 @@ fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
         id: object::new(ctx),
         name: b"Redacted Beeliever".to_string(),
         description: b"www.gonative.cc/beelievers".to_string(),
-        url: url::new_unsafe_from_bytes(b"https://todo-image-url.com"), // TODO, need to set URL
+        image_url: url::new_unsafe_from_bytes(b"https://todo-image-url.com"), // TODO, need to set URL
     };
 
     event::emit(NFTMinted {
@@ -86,6 +86,6 @@ fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
 
 /// Permanently delete `nft`
 public fun burn(nft: NFT, _: &mut TxContext) {
-    let NFT { id, name: _, description: _, url: _ } = nft;
+    let NFT { id, name: _, description: _, image_url: _ } = nft;
     id.delete()
 }
