@@ -111,19 +111,13 @@ public fun bid(auction: &mut Auction, payment: Coin<SUI>, clock: &Clock, ctx: &m
     balance::join(&mut auction.vault, coin::into_balance(payment));
 
     if (table::contains(&auction.users, bidder)) {
-        // Update existing bid
-        let bid_info = table::borrow_mut(&mut auction.users, bidder);
-        let new_amount = bid_info.amount + bid_amount;
-        bid_info.amount = new_amount;
-
-        // Update bid queue
-        // update_bid_in_queue(&mut auction.winning_queue, bidder, new_amount);
+        // auction.update_bid(bidder, bid_amount);
     } else {
-        // Create new bid
         assert!(bid_amount >= MIN_BID, EEntryBidTooSmall);
         auction.insert_new_bid(bidder, bid_amount);
     }
 }
+
 
 /// Returns true if the bidder makes it to the winning list, otherwise returns false.
 fun insert_new_bid(auction: &mut Auction, bidder: address, amount: u64): bool {
@@ -183,6 +177,7 @@ fun find_by_amount(v: &vector<Winner>, amount: u64): u64 {
     lo
 }
 
+
 public fun user_record(auction: &Auction, ctx: &mut TxContext): Option<UserRecordDispl> {
     let bidder = tx_context::sender(ctx);
     if (!auction.users.contains(bidder)) {
@@ -196,9 +191,7 @@ public fun user_record(auction: &Auction, ctx: &mut TxContext): Option<UserRecor
     if (lowest_bid == ur.amount) {
         while (i >= 0) {
             let w = &auction.winning_queue[i];
-            if (amount != w.amount) {
-                break
-            };
+            if (amount != w.amount) break;
             if (bidder == w.bidder) {
                 is_winning = true;
                 break
@@ -252,20 +245,33 @@ public fun set_paused(auction: &mut Auction, _: &AdminCap, pause: bool) {
     auction.paused = pause;
 }
 
+// ----------------------
+// Unit tests
+// ----------------------
+
+// #[test_only]
+// public fun init_for_test(ctx: &mut TxContext): (Auction, AdminCap) {
+// }
+
 #[test_only]
-public fun init_for_test(ctx: &mut TxContext): (Auction, AdminCap) {
-    let admin_cap = AdminCap {
-        id: object::new(ctx),
-    };
+public(package) fun mkw(amount: u64): Winner {
+    Winner {
+        bidder: @0x1,
+        amount,
+    }
+}
 
-    let auction = Auction {
-        id: object::new(ctx),
-        paused: false,
-        size: 4,
-        starts_at: 10,
-        ends_at: 20,
-        vault: balance::create_for_testing(0),
-    };
+#[test]
+fun test_find_by_amount() {
+    let v = vector[mkw(10)];
+    assert!(find_by_amount(&v, 1) == 1);
+    assert!(find_by_amount(&v, 10) == 1);
+    assert!(find_by_amount(&v, 11) == 0);
 
-    (auction, admin_cap)
+    let v = vector[mkw(20), mkw(11), mkw(11), mkw(10), mkw(10), mkw(10)];
+    assert!(find_by_amount(&v, 1) == 6);
+    assert!(find_by_amount(&v, 10) == 6);
+    assert!(find_by_amount(&v, 11) == 3);
+    assert!(find_by_amount(&v, 12) == 1);
+    assert!(find_by_amount(&v, 30) == 0);
 }
