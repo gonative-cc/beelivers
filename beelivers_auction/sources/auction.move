@@ -383,12 +383,17 @@ fun test_find_by_amount() {
 }
 
 #[test_only]
-public(package) fun check_find_by_address(v: &vector<Winner>, amount: u64, bidder: address, exp_idx: u64, exp_found: bool) {
+public(package) fun check_find_by_address(
+    v: &vector<Winner>,
+    amount: u64,
+    bidder: address,
+    exp_idx: u64,
+    exp_found: bool,
+) {
     let (idx, found) = find_by_address(v, amount, bidder);
     assert!(idx == exp_idx);
     assert!(found == exp_found);
 }
-
 
 #[test]
 fun test_find_by_address() {
@@ -397,7 +402,14 @@ fun test_find_by_address() {
     check_find_by_address(&v, 10, @1, 1, false);
     check_find_by_address(&v, 11, @1, 0, false);
 
-    let v = vector[mkw(@1, 20), mkw(@2, 11), mkw(@3, 11), mkw(@4, 10), mkw(@5, 10), mkw(@6, 10)];
+    let v = vector[
+        mkw(@1, 20),
+        mkw(@2, 11),
+        mkw(@3, 11),
+        mkw(@4, 10),
+        mkw(@5, 10),
+        mkw(@6, 10),
+    ];
     assert!(find_by_amount(&v, 1) == 6);
     assert!(find_by_amount(&v, 10) == 6);
     assert!(find_by_amount(&v, 11) == 3);
