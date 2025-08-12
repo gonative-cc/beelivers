@@ -6,11 +6,17 @@ module beelivers_auction::nft;
 
 use std::string;
 use sui::event;
+use sui::package::Publisher;
 use sui::url::{Self, Url};
 
-/// Removing the `store` ablity prevents this NFT
-/// from being transferred.
-public struct NFT has key {
+// ========== Errors ==========
+const ENotAuthorized: u64 = 1;
+
+// ========== Structs ==========
+
+/// Whitelist NFT for Beelievers
+/// The `store` ablity is remove to prevent transfers.
+public struct WlNFT has key {
     id: UID,
     /// Name for the token
     name: string::String,
@@ -20,16 +26,13 @@ public struct NFT has key {
     image_url: Url,
 }
 
-public struct AdminCap has key, store {
-    id: UID,
-}
+/// The OTW for the module.
+public struct NFT has drop {}
 
-fun init(ctx: &mut TxContext) {
-    let admin_cap = AdminCap {
-        id: object::new(ctx),
-    };
-
-    transfer::public_transfer(admin_cap, ctx.sender());
+fun init(otw: NFT, ctx: &mut TxContext) {
+    // Claim the Publisher object.
+    let publisher: Publisher = sui::package::claim(otw, ctx);
+    transfer::public_transfer(publisher, ctx.sender())
 }
 
 // ===== Events =====
@@ -43,22 +46,23 @@ public struct NFTMinted has copy, drop {
 
 // ===== Public view functions =====
 
-public fun name(nft: &NFT): &string::String {
+public fun name(nft: &WlNFT): &string::String {
     &nft.name
 }
 
-public fun description(nft: &NFT): &string::String {
+public fun description(nft: &WlNFT): &string::String {
     &nft.description
 }
 
-public fun image_url(nft: &NFT): &Url {
+public fun image_url(nft: &WlNFT): &Url {
     &nft.image_url
 }
 
 // ===== Entrypoints and functions =====
 
 /// Create a new devnet_nft
-public fun mint_many(_: &mut AdminCap, recipients: vector<address>, ctx: &mut TxContext) {
+public fun mint_many(cap: &Publisher, recipients: vector<address>, ctx: &mut TxContext) {
+    assert!(cap.from_module<WlNFT>(), ENotAuthorized);
     let mut i = 0;
     while (i < vector::length(&recipients)) {
         let r = *vector::borrow(&recipients, i);
@@ -68,7 +72,7 @@ public fun mint_many(_: &mut AdminCap, recipients: vector<address>, ctx: &mut Tx
 }
 
 fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
-    let nft = NFT {
+    let nft = WlNFT {
         id: object::new(ctx),
         name: b"WL BTCFi Beeleievers".to_string(),
         description: b"www.gonative.cc/beelievers".to_string(),
@@ -85,7 +89,7 @@ fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
 }
 
 /// Permanently delete `nft`
-public fun burn(nft: NFT, _: &mut TxContext) {
-    let NFT { id, name: _, description: _, image_url: _ } = nft;
+public fun burn(nft: WlNFT, _: &mut TxContext) {
+    let WlNFT { id, name: _, description: _, image_url: _ } = nft;
     id.delete()
 }
