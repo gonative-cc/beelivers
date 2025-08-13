@@ -77,7 +77,7 @@ public fun create_admin_cap(ctx: &mut TxContext): AdminCap {
     }
 }
 
-/// creates a new Auction (shared object) and associated AdminCap (transfers it to the tx sender).
+/// creates a new Auction (shared object) and associate it with the provided AdminCap.
 public fun create(
     admin_cap: &AdminCap,
     start_ms: u64,
@@ -146,10 +146,15 @@ public fun bid(
     total
 }
 
+public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) {
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
+    auction.paused = pause;
+}
+
 /// Finalizes the auction.
 public entry fun finalize(
-    auction: &mut Auction,
     admin_cap: &AdminCap,
+    auction: &mut Auction,
     winners: vector<address>,
     clearing_price: u64,
     clock: &Clock,
@@ -246,12 +251,6 @@ public fun clearing_price(auction: &Auction): Option<u64> {
     if (auction.finalized) option::some(auction.clearing_price) else option::none()
 }
 
-// ==================== Admin methods ===================================
-
-public fun set_paused(auction: &mut Auction, _: &AdminCap, pause: bool) {
-    auction.paused = pause;
-}
-
 // ==================== helper functions ===================================
 
 /// Returns true if the vector elements are in strict ascending order.
@@ -343,4 +342,26 @@ fun test_bisect_address() {
         assert!(bisect_address(&addresses, addresses[i]), i);
         i = i + 1;
     };
+}
+
+#[test_only]
+fun dummy_tx(sender: address, time_ms: u64): TxContext {
+    tx_context::new_from_hint(sender, 1, 1, time_ms, 0)
+}
+
+#[test_only]
+use sui::clock;
+
+#[test]
+fun test_create_auction_valid() {
+    let mut ctx = dummy_tx(@0x1, 1);
+    let mut c = clock::create_for_testing(&mut ctx);
+    let admin_cap = create_admin_cap(&mut ctx);
+    create(&admin_cap, 1000+ONE_HOUR, ONE_HOUR, 5, &c, &mut ctx);
+    c.destroy_for_testing();
+    let AdminCap { id } = admin_cap;
+    id.delete();
+    // object::delete(admin_cap.id);
+    // assert!(a == 3700);
+    // assert!(a.end_time == 7300, 0);
 }
