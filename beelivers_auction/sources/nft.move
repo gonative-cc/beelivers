@@ -114,7 +114,6 @@ fun mint(ctx: &mut TxContext, recipient: address): WlNFT {
         object_id: object::id(&nft),
         recipient,
     });
-
     nft
 }
 
