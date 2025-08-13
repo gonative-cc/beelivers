@@ -77,14 +77,45 @@ public fun image_url(_: &WlNFT): Url {
 // ===== Entrypoints and functions =====
 
 /// Create a new devnet_nft
-public fun mint_many(cap: &Publisher, recipients: vector<address>, ctx: &mut TxContext) {
+public fun mint_many_and_transfer(
+    cap: &Publisher,
+    recipients: vector<address>,
+    ctx: &mut TxContext,
+) {
     assert!(cap.from_module<WlNFT>(), ENotAuthorized);
     let mut i = 0;
-    while (i < vector::length(&recipients)) {
-        let r = *vector::borrow(&recipients, i);
+    while (i < recipients.length()) {
+        let r = *recipients.borrow(i);
         mint_and_transfer(ctx, r);
         i = i + 1;
     }
+}
+
+public fun mint_many(
+    cap: &Publisher,
+    recipients: vector<address>,
+    ctx: &mut TxContext,
+): vector<WlNFT> {
+    assert!(cap.from_module<WlNFT>(), ENotAuthorized);
+    let mut nfts: vector<WlNFT> = vector[];
+    let mut i = 0;
+    while (i < recipients.length()) {
+        let r = *recipients.borrow(i);
+        nfts.push_back(mint(ctx, r));
+        i = i + 1;
+    };
+    nfts
+}
+
+fun mint(ctx: &mut TxContext, recipient: address): WlNFT {
+    let nft = WlNFT { id: object::new(ctx) };
+
+    event::emit(NFTMinted {
+        object_id: object::id(&nft),
+        recipient,
+    });
+
+    nft
 }
 
 fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
