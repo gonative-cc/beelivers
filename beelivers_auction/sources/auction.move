@@ -5,6 +5,7 @@ module beelivers_auction::auction;
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
+use sui::event::emit;
 use sui::sui::SUI;
 use sui::table::{Self, Table};
 
@@ -56,6 +57,17 @@ public struct Auction has key, store {
     /// The price winning bidders are going to pay
     clearing_price: u64,
     finalized: bool,
+}
+
+public struct BidEvent has copy, drop {
+    bidder: address,
+    total_bid_amount: u64,
+}
+
+public struct FinalizedEvent has copy, drop {
+    /// funds from the auction transferred to the admin.
+    funds: u64,
+    clearing_price: u64,
 }
 
 /// Create admin capability
@@ -126,6 +138,11 @@ public fun bid(
         bid_amount
     };
 
+    emit(BidEvent {
+        bidder,
+        total_bid_amount: total,
+    });
+
     total
 }
 
@@ -154,7 +171,11 @@ public entry fun finalize(
         coin::from_balance(auction.vault.split(funds), ctx),
         ctx.sender(),
     );
-    // TODO: event, include funds
+
+    emit(FinalizedEvent {
+        funds,
+        clearing_price,
+    });
 }
 
 /// Allows any user to withdraw their funds after the auction is finalized.
@@ -201,12 +222,18 @@ public fun is_paused(auction: &Auction): bool {
     auction.paused
 }
 
+/// Returns true if auction is finalized and bidders can withdraw excees of their funds.
 public fun is_finalized(auction: &Auction): bool {
     auction.finalized
 }
 
-/// Returns bidder total (aggregated) bid. Returns None if user withdrew his bid after the auction
-/// is finalized.
+/// Returns true if a given address is winner. If auction is not finalized, returns false.
+public fun is_winner(auction: &Auction, bidder: address): bool {
+    bisect_address(&auction.winners, bidder)
+}
+
+/// Returns bidder total (aggregated) bid. Returns None if the bidder didn't participate in the
+/// auction or withdrew his bid after the auction is finalized.
 public fun query_total_bid(auction: &Auction, bidder: address): Option<u64> {
     if (!auction.bidders.contains(bidder)) {
         return option::none()
@@ -214,8 +241,9 @@ public fun query_total_bid(auction: &Auction, bidder: address): Option<u64> {
     option::some(auction.bidders[bidder])
 }
 
-public fun is_winner(auction: &Auction, bidder: address): bool {
-    bisect_address(&auction.winners, bidder)
+/// Returns None if auction is not finalized yet. Otherwise returns the clearing price in Sui.
+public fun clearing_price(auction: &Auction): Option<u64> {
+    if (auction.finalized) option::some(auction.clearing_price) else option::none()
 }
 
 // ==================== Admin methods ===================================
@@ -307,4 +335,12 @@ fun test_bisect_address() {
     let single = vector[@0x3];
     assert!(bisect_address(&single, @0x3));
     assert!(!bisect_address(&single, @0x1));
+
+    let addresses = vector[@0x1, @0x2, @0x3, @0x4, @0x5, @0x6, @0x7, @0x8, @0x9, @0xa];
+    // Test all elements are found
+    let mut i = 0;
+    while (i < addresses.length()) {
+        assert!(bisect_address(&addresses, addresses[i]), i);
+        i = i + 1;
+    };
 }
