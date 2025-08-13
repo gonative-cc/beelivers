@@ -10,7 +10,7 @@ This script reads a list of addresses from a CSV file, resolves any `.sui` names
     npm install
 ```
 
-2. Create `.env` file
+1. Create `.env` file
 
 ```env
 MNEMONIC="your mnemonic"
@@ -20,7 +20,7 @@ PUBLISHER_ID="0x..."
 NETWORK="devnet"
 ```
 
-3. Execute the script:
+1. Execute the script:
 
     Replace the file path and adjusting the batch size as needed.
 
