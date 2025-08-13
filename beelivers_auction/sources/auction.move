@@ -13,7 +13,7 @@ use sui::table::{Self, Table};
 
 // One hour in milliseconds
 const ONE_HOUR: u64 = 60 * 60 *1000;
-const MIN_BID: u64 = 1000000000; // 1SUI = MIST_PER_SUI;
+const MIN_BID: u64 = 1_000_000_000; // 1SUI = MIST_PER_SUI;
 
 // ======== Errors ========
 const ENotStarted: u64 = 1;
@@ -106,6 +106,7 @@ public fun create(
     transfer::public_share_object(auction)
 }
 
+
 fun assert_is_active(auction: &Auction, clock: &Clock) {
     let now = clock.timestamp_ms();
     assert!(now >= auction.start_ms, ENotStarted);
@@ -126,6 +127,8 @@ public fun bid(
     let bid_amount = coin::value(&payment);
     assert!(bid_amount > 0, EBidZeroSui);
 
+    // TODO: use can use "method" call
+    // example: auction.vault.join(payment.into_balance())
     balance::join(&mut auction.vault, coin::into_balance(payment));
 
     let total = if (table::contains(&auction.bidders, bidder)) {
@@ -146,15 +149,17 @@ public fun bid(
     total
 }
 
+
 public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     auction.paused = pause;
 }
 
-/// Finalizes the auction.
+/// Finalizes the auction
 public entry fun finalize(
     admin_cap: &AdminCap,
     auction: &mut Auction,
+    // TODO: // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
     winners: vector<address>,
     clearing_price: u64,
     clock: &Clock,
