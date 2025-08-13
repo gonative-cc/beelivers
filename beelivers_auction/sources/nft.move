@@ -59,6 +59,7 @@ fun init(otw: NFT, ctx: &mut TxContext) {
 
 public struct NFTMinted has copy, drop {
     object_id: ID,
+    recipient: address,
 }
 
 // ===== Public view functions =====
@@ -84,30 +85,10 @@ public fun mint_many_and_transfer(
     assert!(cap.from_module<WlNFT>(), ENotAuthorized);
     let mut i = 0;
     while (i < recipients.length()) {
-        let r = *recipients.borrow(i);
+        let r = recipients[i];
         mint_and_transfer(ctx, r);
         i = i + 1;
     }
-}
-
-public fun mint_many(cap: &Publisher, amount: u64, ctx: &mut TxContext): vector<WlNFT> {
-    assert!(cap.from_module<WlNFT>(), ENotAuthorized);
-    let mut nfts: vector<WlNFT> = vector[];
-    let mut i = 0;
-    while (i < amount) {
-        nfts.push_back(mint(ctx));
-        i = i + 1;
-    };
-    nfts
-}
-
-fun mint(ctx: &mut TxContext): WlNFT {
-    let nft = WlNFT { id: object::new(ctx) };
-
-    event::emit(NFTMinted {
-        object_id: object::id(&nft),
-    });
-    nft
 }
 
 fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
@@ -115,6 +96,7 @@ fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
 
     event::emit(NFTMinted {
         object_id: object::id(&nft),
+        recipient,
     });
 
     transfer::transfer(nft, recipient);
