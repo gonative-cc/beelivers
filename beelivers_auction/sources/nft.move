@@ -77,11 +77,15 @@ public fun image_url(_: &WlNFT): Url {
 // ===== Entrypoints and functions =====
 
 /// Create a new devnet_nft
-public fun mint_many(cap: &Publisher, recipients: vector<address>, ctx: &mut TxContext) {
+public fun mint_many_and_transfer(
+    cap: &Publisher,
+    recipients: vector<address>,
+    ctx: &mut TxContext,
+) {
     assert!(cap.from_module<WlNFT>(), ENotAuthorized);
     let mut i = 0;
-    while (i < vector::length(&recipients)) {
-        let r = *vector::borrow(&recipients, i);
+    while (i < recipients.length()) {
+        let r = recipients[i];
         mint_and_transfer(ctx, r);
         i = i + 1;
     }
