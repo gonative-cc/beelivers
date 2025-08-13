@@ -60,7 +60,6 @@ public struct Auction has key, store {
 }
 
 public struct BidEvent has copy, drop {
-    // add rebid: or some field like this to know this is updated or first bid.
     bidder: address,
     total_bid_amount: u64,
 }
@@ -73,11 +72,6 @@ public struct FinalizedEvent has copy, drop {
 
 /// Create admin capability
 public fun create_admin_cap(ctx: &mut TxContext): AdminCap {
-    // we should create AdminCap in init function.
-    // So who own admincap can do anything
-    // and because admin cap only onetime create object.
-    // we don't need to store admin cap id in Aunction
-    // ofc, if we move this to init()
     AdminCap {
         id: object::new(ctx),
     }
@@ -114,9 +108,6 @@ public fun create(
 
 
 fun assert_is_active(auction: &Auction, clock: &Clock) {
-    // we should change this to bool function
-    // add assert this function when we need.
-    // this is easier for testing
     let now = clock.timestamp_ms();
     assert!(now >= auction.start_ms, ENotStarted);
     assert!(now < auction.end_ms, EEnded);
@@ -159,16 +150,14 @@ public fun bid(
 }
 
 
-// change order parameters to (auction, admincap,...)
 public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) {
-    // again if you init admin_cap in init, you don't need this assert.
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     auction.paused = pause;
 }
 
 /// Finalizes the auction
 public entry fun finalize(
-    admin_cap: &AdminCap, // Review: change parameters to (auction, admin_cap,...)
+    admin_cap: &AdminCap,
     auction: &mut Auction,
     // TODO: // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
     winners: vector<address>,
