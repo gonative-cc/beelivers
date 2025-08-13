@@ -136,9 +136,8 @@ public fun bid(
     let bid_amount = coin::value(&payment);
     assert!(bid_amount > 0, EBidZeroSui);
 
-    // use can use "method" call
+    // TODO: use can use "method" call
     // example: auction.vault.join(payment.into_balance())
-    // only easier for read
     balance::join(&mut auction.vault, coin::into_balance(payment));
 
     let total = if (table::contains(&auction.bidders, bidder)) {
@@ -171,7 +170,8 @@ public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) 
 public entry fun finalize(
     admin_cap: &AdminCap, // Review: change parameters to (auction, admin_cap,...)
     auction: &mut Auction,
-    winners: vector<address>, // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
+    // TODO: // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
+    winners: vector<address>,
     clearing_price: u64,
     clock: &Clock,
     ctx: &mut TxContext,
