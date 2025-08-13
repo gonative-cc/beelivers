@@ -251,6 +251,7 @@ public fun clearing_price(auction: &Auction): Option<u64> {
     if (auction.finalized) option::some(auction.clearing_price) else option::none()
 }
 
+
 // ==================== helper functions ===================================
 
 /// Returns true if the vector elements are in strict ascending order.
@@ -284,6 +285,11 @@ public(package) fun bisect_address(v: &vector<address>, addr: address): bool {
         if (addr < mid_val) { right = mid_idx; } else { left = mid_idx + 1; }
     };
     false
+}
+
+/// wrap_vector help ptb to join vector easier
+public fun wrap_vector(v: vector<address>): vector<address> {
+    return v
 }
 
 // ----------------------
