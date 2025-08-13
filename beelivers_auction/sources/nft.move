@@ -107,7 +107,6 @@ fun mint(ctx: &mut TxContext): WlNFT {
     event::emit(NFTMinted {
         object_id: object::id(&nft),
     });
-
     nft
 }
 
