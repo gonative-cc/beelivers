@@ -7,7 +7,7 @@ This script reads a list of addresses from a CSV file, resolves any `.sui` names
 1. Install dependencies:
 
 ```bash
-    npm install
+    pnpm install
 ```
 
 1. Create `.env` file
@@ -25,7 +25,7 @@ NETWORK="devnet"
     Replace the file path and adjusting the batch size as needed.
 
 ```bash
-    npx ts-node src/mint.ts --file ./path/to/your_addresses.csv --batch-size 100
+    pnpm ts-node src/mint.ts --file ./path/to/your_addresses.csv --batch-size 100
 ```
 
 This will process all addresses from the file and generate a report on which addreses had their NFT minted.
