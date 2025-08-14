@@ -4,13 +4,13 @@ This script reads a list of addresses from a CSV file, resolves any `.sui` names
 
 ## How to Run
 
-1. Install dependencies:
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-1. Create `.env` file
+### 2. Create `.env` file
 
 ```env
 MNEMONIC="your mnemonic"
@@ -20,17 +20,17 @@ PUBLISHER_ID="0x..."
 NETWORK="devnet"
 ```
 
-1. Execute the pre-processor:
+### 3. Execute scripts
 
-    It takes list of `csv` files and cleans it up, and resovles any sui ns.
-    NOTE: Remember to run it on mainnet so the `suins` are resovled correctly.
+Execute the pre-processor.
+It takes list of `csv` files and cleans it up, and resolves any Sui NS.
+NOTE: Remember to run it on mainnet so the `suins` are resolved correctly.
 
 ```bash
 pnpm ts-node scripts/wl-pre-processor.ts ./file1.csv ./file2.csv ./file3.csv --output final_WL.csv
 ```
 
-1. Execute the script:
-
+Execute the script.
 Replace the file path and adjusting the batch size as needed.
 
 ```bash
