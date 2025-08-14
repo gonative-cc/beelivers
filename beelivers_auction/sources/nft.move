@@ -47,7 +47,7 @@ fun init(otw: NFT, ctx: &mut TxContext) {
     );
     display.add(
         b"thumbnail_url".to_string(),
-        b"https://pub-4d94d28ba369496d80873b5bd0c7f2c1.r2.dev/WL_BTCFI_Beelievers-small.jpg".to_string(),
+        b"https://pub-4d94d28ba369496d80873b5bd0c7f2c1.r2.dev/WL_BTCFI_Beelievers-small.webp".to_string(),
     );
     display.update_version();
 
