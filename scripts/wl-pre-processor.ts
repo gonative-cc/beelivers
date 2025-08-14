@@ -49,10 +49,6 @@ async function main() {
 	console.log("\n🎉 Pre-processing complete!");
 }
 
-main().catch((error) => {
-	console.error("A fatal error occurred:", error);
-});
-
 async function readAllFiles(filePaths: string[]): Promise<string[]> {
 	let allEntries: string[] = [];
 	for (const filePath of filePaths) {
@@ -145,3 +141,11 @@ async function writeToCsv(addresses: string[], outputFilename: string) {
 		console.error(`❌ Error writing to file ${outputFilename}:`, error);
 	}
 }
+
+//
+// START
+//
+
+main().catch((error) => {
+	console.error("A fatal error occurred:", error);
+});

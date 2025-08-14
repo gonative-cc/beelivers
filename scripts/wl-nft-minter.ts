@@ -132,10 +132,6 @@ async function main() {
 	console.log("\n🎉 Script finished.");
 }
 
-main().catch((error) => {
-	console.error("A fatal error occurred in the main function:", error);
-});
-
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -179,3 +175,11 @@ function addMintCallToTransaction(tx: Transaction, batch: string[]) {
 		arguments: [tx.object(PUBLISHER_ID!), tx.pure.vector("address", batch)],
 	});
 }
+
+//
+// START
+//
+
+main().catch((error) => {
+	console.error("A fatal error occurred in the main function:", error);
+});
