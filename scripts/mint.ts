@@ -134,7 +134,7 @@ async function writeReportCSV(reportEntries: ReportEntry[], filename: string) {
 			(entry) =>
 				`"${entry.originalEntry.replace(/"/g, '""')}",${entry.finalAddress},${
 					entry.status
-				},"${entry.reason.replace(/"/g, '""')}"`
+				},"${entry.reason.replace(/"/g, '""')}"`,
 		)
 		.join("\n");
 
