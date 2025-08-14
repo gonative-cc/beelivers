@@ -60,11 +60,13 @@ public struct Auction has key, store {
 }
 
 public struct BidEvent has copy, drop {
-    bidder: address,
+    auction_id: ID,
+    /// bidder (tx sender) total (aggregated) bid amount
     total_bid_amount: u64,
 }
 
 public struct FinalizedEvent has copy, drop {
+    auction_id: ID,
     /// funds from the auction transferred to the admin.
     funds: u64,
     clearing_price: u64,
@@ -86,10 +88,22 @@ public fun create(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
+    let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
+    transfer::public_share_object(auction)
+}
+
+public(package) fun create_(
+    admin_cap: &AdminCap,
+    start_ms: u64,
+    duration_ms: u64,
+    size: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Auction {
     // must start at least 1h in the future
     assert!(start_ms >= clock.timestamp_ms() + ONE_HOUR, EStartTimeNotInFuture);
     assert!(duration_ms >= ONE_HOUR, EDurationTooShort);
-    let auction = Auction {
+    Auction {
         id: object::new(ctx),
         admin_cap_id: object::id(admin_cap),
         paused: false,
@@ -101,11 +115,8 @@ public fun create(
         winners: vector::empty(),
         clearing_price: 0,
         finalized: false,
-    };
-
-    transfer::public_share_object(auction)
+    }
 }
-
 
 fun assert_is_active(auction: &Auction, clock: &Clock) {
     let now = clock.timestamp_ms();
@@ -142,13 +153,12 @@ public fun bid(
     };
 
     emit(BidEvent {
-        bidder,
+        auction_id: auction.id.to_inner(),
         total_bid_amount: total,
     });
 
     total
 }
-
 
 public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
@@ -183,6 +193,7 @@ public entry fun finalize(
     );
 
     emit(FinalizedEvent {
+        auction_id: auction.id.to_inner(),
         funds,
         clearing_price,
     });
@@ -355,6 +366,12 @@ fun dummy_tx(sender: address, time_ms: u64): TxContext {
 }
 
 #[test_only]
+fun cleanup(a: Auction, ac: AdminCap) {
+    sui::test_utils::destroy(a);
+    sui::test_utils::destroy(ac);
+}
+
+#[test_only]
 use sui::clock;
 
 #[test]
@@ -362,10 +379,9 @@ fun test_create_auction_valid() {
     let mut ctx = dummy_tx(@0x1, 1);
     let mut c = clock::create_for_testing(&mut ctx);
     let admin_cap = create_admin_cap(&mut ctx);
-    create(&admin_cap, 1000+ONE_HOUR, ONE_HOUR, 5, &c, &mut ctx);
+    let a = create_(&admin_cap, 1000+ONE_HOUR, ONE_HOUR, 5, &c, &mut ctx);
+    cleanup(a, admin_cap);
     c.destroy_for_testing();
-    let AdminCap { id } = admin_cap;
-    id.delete();
     // object::delete(admin_cap.id);
     // assert!(a == 3700);
     // assert!(a.end_time == 7300, 0);
