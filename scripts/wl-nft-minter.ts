@@ -2,7 +2,6 @@ import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as dotenv from "dotenv";
-import { isValidSuiAddress } from "@mysten/sui/utils";
 import { promises as fs } from "fs";
 import { parse } from "csv-parse/sync";
 import { Command } from "commander";
@@ -10,11 +9,15 @@ import * as path from "path";
 
 dotenv.config();
 
-type ReportStatus = "Pending" | "Success" | "Failed - Invalid Format" | "Failed - SuiNS Resolution";
+type ReportStatus =
+	| "Pending"
+	| "Success"
+	| "Failed - Invalid Format"
+	| "Failed - SuiNS Resolution"
+	| "Failed - Transaction";
 
 interface ReportEntry {
-	originalEntry: string;
-	finalAddress: string;
+	address: string;
 	status: ReportStatus;
 	reason: string;
 }
@@ -51,13 +54,17 @@ async function main() {
 	console.log(`👨‍⚖️ Publisher ID: ${PUBLISHER_ID}`);
 	console.log("---");
 
-	let allEntries = await getEntriesFromCSV(filePath);
+	let validAddresses = await getEntriesFromCSV(filePath);
 	if (offset > 0) {
 		console.log(`↪️ Applying offset: Skipping first ${offset} entries.`);
-		allEntries = allEntries.slice(offset);
+		validAddresses = validAddresses.slice(offset);
 	}
 
-	const { validAddresses, reportEntries } = await processAddresses(client, allEntries);
+	const reportEntries: ReportEntry[] = validAddresses.map((address) => ({
+		address,
+		status: "Pending",
+		reason: "",
+	}));
 
 	if (validAddresses.length === 0) {
 		console.log("No valid addresses to process. Exiting.");
@@ -70,48 +77,68 @@ async function main() {
 		batches.push(validAddresses.slice(i, i + batchSize));
 	}
 
-	console.log(`\n⚙️  Preparing to add ${batches.length} batches to a single transaction.`);
-	console.log("---");
+	console.log(`\n⚙️  Executing ${batches.length} transactions in sequence...`);
+	for (let i = 0; i < batches.length; i++) {
+		const batch = batches[i];
+		const batchNumber = i + 1;
 
-	const tx = buildTransaction(batches);
-
-	let transactionSuccess = false;
-	try {
-		console.log("\n✅ All batches prepared. Executing the single transaction now...");
-		const result = await client.signAndExecuteTransaction({
-			transaction: tx,
-			signer: keypair,
-			options: { showEffects: true },
-		});
-
-		if (result.effects?.status.status === "success") {
-			console.log(`✅ Transaction successful! All NFTs minted.`);
-			console.log(`   🔗 Transaction Digest: ${result.digest}`);
-			transactionSuccess = true;
-		} else {
-			console.error(`❌ Transaction FAILED!`);
-			console.error(`   Status: ${result.effects?.status.status}`);
-			console.error(`   Error: ${result.effects?.status.error}`);
+		console.log(`\n--- Processing Batch ${batchNumber}/${batches.length} ---`);
+		if (batch.length === 0) {
+			console.log("   Skipping empty batch.");
+			continue;
 		}
-	} catch (error) {
-		console.error(`❌ An unexpected error occurred during execution:`, error);
-	}
 
-	if (transactionSuccess) {
-		reportEntries.forEach((entry) => {
-			if (entry.status === "Pending") {
-				entry.status = "Success";
+		try {
+			const tx = new Transaction();
+			addMintCallToTransaction(tx, batch);
+			const result = await client.signAndExecuteTransaction({
+				transaction: tx,
+				signer: keypair,
+				options: { showEffects: true },
+			});
+
+			if (result.effects?.status.status === "success") {
+				console.log(`✅ Batch ${batchNumber} successful!`);
+				console.log(`   🔗 Digest: ${result.digest}`);
+				batch.forEach((address) => {
+					const reportEntry = reportEntries.find(
+						(r) => r.address === address && r.status === "Pending"
+					);
+					if (reportEntry) {
+						reportEntry.status = "Success";
+					}
+				});
+				await sleep(1000); // NOTE: We have to wait in order for the RPC to be able to aquire the gas coin
+			} else {
+				throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 			}
-		});
+		} catch (error) {
+			console.error(`❌ An error occurred on Batch ${batchNumber}:`, error);
+			batch.forEach((address) => {
+				const reportEntry = reportEntries.find(
+					(r) => r.address === address && r.status === "Pending"
+				);
+				if (reportEntry) {
+					reportEntry.status = "Failed - Transaction";
+					reportEntry.reason = (error as Error).message;
+				}
+			});
+			console.log("Stopping script due to transaction failure.");
+			break;
+		}
 	}
 
 	await writeReportCSV(reportEntries, reportFilename);
-	console.log("🎉 Script finished.");
+	console.log("\n🎉 Script finished.");
 }
 
 main().catch((error) => {
 	console.error("A fatal error occurred in the main function:", error);
 });
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function getEntriesFromCSV(filePath: string): Promise<string[]> {
 	console.log(`📄 Reading entries from ${filePath}...`);
@@ -130,12 +157,7 @@ async function writeReportCSV(reportEntries: ReportEntry[], filename: string) {
 	console.log(`\n✍️  Writing final report to ${filename}...`);
 	const header = "Original Entry,Final Address,Status,Reason\n";
 	const rows = reportEntries
-		.map(
-			(entry) =>
-				`"${entry.originalEntry.replace(/"/g, '""')}",${entry.finalAddress},${
-					entry.status
-				},"${entry.reason.replace(/"/g, '""')}"`,
-		)
+		.map((entry) => `${entry.address},${entry.status},"${entry.reason.replace(/"/g, '""')}"`)
 		.join("\n");
 
 	try {
@@ -146,75 +168,14 @@ async function writeReportCSV(reportEntries: ReportEntry[], filename: string) {
 	}
 }
 
-async function resolveEntry(client: SuiClient, entry: string): Promise<string | null> {
-	if (!entry.trim().endsWith(".sui")) {
-		return entry.startsWith("0x") ? entry : null;
-	}
-
-	try {
-		return await client.resolveNameServiceAddress({ name: entry });
-	} catch (error) {
-		console.warn(`   ⚠️ Could not resolve SuiNS name: ${entry}`);
-		return null;
-	}
-}
-
-async function processAddresses(client: SuiClient, entries: string[]) {
-	const reportEntries: ReportEntry[] = [];
-	const validAddresses: string[] = [];
-
-	console.log("Resolving and validating all entries...");
-	for (const entry of entries) {
-		const resolved = await resolveEntry(client, entry);
-		if (!resolved) {
-			reportEntries.push({
-				originalEntry: entry,
-				finalAddress: "",
-				status: "Failed - SuiNS Resolution",
-				reason: "Could not resolve to a valid Sui address.",
-			});
-			continue;
-		}
-
-		if (!isValidSuiAddress(resolved)) {
-			reportEntries.push({
-				originalEntry: entry,
-				finalAddress: resolved,
-				status: "Failed - Invalid Format",
-				reason: "The resolved address has an invalid format.",
-			});
-			continue;
-		}
-
-		validAddresses.push(resolved);
-		reportEntries.push({
-			originalEntry: entry,
-			finalAddress: resolved,
-			status: "Pending",
-			reason: "",
-		});
-	}
-
-	console.log(`✅ Found ${validAddresses.length} valid addresses to process.`);
-	return { validAddresses, reportEntries };
-}
-
-function buildTransaction(batches: string[][]): Transaction {
+function addMintCallToTransaction(tx: Transaction, batch: string[]) {
 	const { PACKAGE_ID, PUBLISHER_ID } = process.env;
 	const MODULE_NAME = "nft";
 	const MINT_FUNCTION = "mint_many_and_transfer";
 	const mintTarget = `${PACKAGE_ID}::${MODULE_NAME}::${MINT_FUNCTION}` as const;
 
-	const tx = new Transaction();
-
-	console.log(`\n⚙️  Preparing to add ${batches.length} batches to a single transaction.`);
-	for (const batch of batches) {
-		if (batch.length > 0) {
-			tx.moveCall({
-				target: mintTarget,
-				arguments: [tx.object(PUBLISHER_ID!), tx.pure.vector("address", batch)],
-			});
-		}
-	}
-	return tx;
+	tx.moveCall({
+		target: mintTarget,
+		arguments: [tx.object(PUBLISHER_ID!), tx.pure.vector("address", batch)],
+	});
 }
