@@ -31,10 +31,10 @@ pnpm ts-node scripts/wl-pre-processor.ts ./file1.csv ./file2.csv ./file3.csv --o
 
 1. Execute the script:
 
-    Replace the file path and adjusting the batch size as needed.
+Replace the file path and adjusting the batch size as needed.
 
 ```bash
 pnpm ts-node scripts/wl-nft-minter.ts --file ./final_WL --batch-size 400
 ```
 
-This will process all addresses from the file and generate a report on which addreses had their NFT minted.
+This will process all addresses from the file and generate a report on which addresses had their NFT minted.

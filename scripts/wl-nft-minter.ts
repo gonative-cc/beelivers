@@ -102,7 +102,7 @@ async function main() {
 				console.log(`   🔗 Digest: ${result.digest}`);
 				batch.forEach((address) => {
 					const reportEntry = reportEntries.find(
-						(r) => r.address === address && r.status === "Pending"
+						(r) => r.address === address && r.status === "Pending",
 					);
 					if (reportEntry) {
 						reportEntry.status = "Success";
@@ -116,7 +116,7 @@ async function main() {
 			console.error(`❌ An error occurred on Batch ${batchNumber}:`, error);
 			batch.forEach((address) => {
 				const reportEntry = reportEntries.find(
-					(r) => r.address === address && r.status === "Pending"
+					(r) => r.address === address && r.status === "Pending",
 				);
 				if (reportEntry) {
 					reportEntry.status = "Failed - Transaction";

@@ -13,7 +13,7 @@ async function main() {
 		.option(
 			"-o, --output <filename>",
 			"The name of the output CSV file",
-			"cleaned_whitelist.csv"
+			"cleaned_whitelist.csv",
 		);
 
 	program.parse(process.argv);
