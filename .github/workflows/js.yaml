@@ -22,6 +22,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         name: Install pnpm
         with:
+          version: 9
           run_install: false
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -30,10 +31,9 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
-      ###
 
-      - name: eslint
-        run: "pnpm run lint"
+      # - name: eslint
+      #   run: "pnpm run lint"
 
       - name: typecheck
         run: "pnpm run typecheck"
@@ -41,5 +41,5 @@ jobs:
       - name: build
         run: "pnpm run build"
 
-      - name: test
-        run: "pnpm run test"
+      # - name: test
+      #   run: "pnpm run test"
