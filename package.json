@@ -1,7 +1,6 @@
 {
   "name": "minter",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.10.0",
   "description": "",
   "main": "index.js",
   "scripts": {
