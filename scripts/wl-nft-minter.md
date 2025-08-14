@@ -4,13 +4,13 @@ This script reads a list of addresses from a CSV file, resolves any `.sui` names
 
 ## How to Run
 
-1. Install dependencies:
+### 1. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-1. Create `.env` file
+### 2. Create `.env` file
 
 ```env
 MNEMONIC="your mnemonic"
@@ -20,12 +20,21 @@ PUBLISHER_ID="0x..."
 NETWORK="devnet"
 ```
 
-1. Execute the script:
+### 3. Execute scripts
 
-    Replace the file path and adjusting the batch size as needed.
+Execute the pre-processor.
+It takes list of `csv` files and cleans it up, and resolves any Sui NS.
+NOTE: Remember to run it on mainnet so the `suins` are resolved correctly.
 
 ```bash
-pnpm ts-node ./wl-nft-minter.ts --file ./path/to/your_addresses.csv --batch-size 100
+pnpm ts-node scripts/wl-pre-processor.ts ./file1.csv ./file2.csv ./file3.csv --output final_WL.csv
 ```
 
-This will process all addresses from the file and generate a report on which addreses had their NFT minted.
+Execute the script.
+Replace the file path and adjusting the batch size as needed.
+
+```bash
+pnpm ts-node scripts/wl-nft-minter.ts --file ./final_WL --batch-size 400
+```
+
+This will process all addresses from the file and generate a report on which addresses had their NFT minted.
