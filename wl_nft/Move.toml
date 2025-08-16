@@ -1,0 +1,19 @@
+[package]
+name = "wl_nft"
+edition = "2024.beta"
+license = "MPL-2.0"
+authors = ["Native"]
+
+[dependencies]
+
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+
+[addresses]
+wl_nft = "0x0"
+
+
+[dev-addresses]
+# The dev-addresses section allows overwriting named addresses for the `--test`
+# and `--dev` modes.
+# alice = "0xB0B"
+

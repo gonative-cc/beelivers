@@ -2,7 +2,7 @@
 
 /// Non transferrable NFT, used to activate users for the auction.
 /// Code based on: https://docs.sui.io/guides/developer/nft/nft-soulbound
-module beelivers_auction::nft;
+module wl_nft::nft;
 
 use std::string;
 use sui::display;
