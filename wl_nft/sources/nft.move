@@ -6,7 +6,6 @@ module wl_nft::nft;
 
 use std::string;
 use sui::display;
-use sui::event;
 use sui::package::{Self, Publisher};
 use sui::url::{Self, Url};
 
@@ -55,13 +54,6 @@ fun init(otw: NFT, ctx: &mut TxContext) {
     transfer::public_transfer(display, ctx.sender());
 }
 
-// ===== Events =====
-
-public struct NFTMinted has copy, drop {
-    object_id: ID,
-    recipient: address,
-}
-
 // ===== Public view functions =====
 
 public fun name(_: &WlNFT): string::String {
@@ -93,12 +85,6 @@ public fun mint_many_and_transfer(
 
 fun mint_and_transfer(ctx: &mut TxContext, recipient: address) {
     let nft = WlNFT { id: object::new(ctx) };
-
-    event::emit(NFTMinted {
-        object_id: object::id(&nft),
-        recipient,
-    });
-
     transfer::transfer(nft, recipient);
 }
 
