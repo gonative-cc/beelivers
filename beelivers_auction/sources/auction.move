@@ -167,7 +167,8 @@ public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) 
     auction.paused = pause;
 }
 
-/// Finalizes the auction
+/// Finalizes the auction. Must be chained with finalize_continue* and finalize_end to finish the
+/// process.
 public fun finalize_start(
     admin_cap: &AdminCap,
     auction: &mut Auction,
