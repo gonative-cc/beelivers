@@ -48,7 +48,7 @@ async function main() {
 	try {
 		let addresses = await readAddressesFromFile(file);
 		addresses = preprocessAddresses(addresses);
-		let bAddreses = batchAddresses(addresses);
+		let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
 		await createPTB(client, keypair, bAddreses);
 	} catch(err) {
 		console.error("❌ Error: ", err);
@@ -56,13 +56,13 @@ async function main() {
 	}
 }
 
-async function readAddressesFromFile(filePath: string): Promise<string[]> {
+export async function readAddressesFromFile(filePath: string): Promise<string[]> {
 	const content = await fs.readFile(filePath, "utf8");
 	const addresses = content.split("\n");
 	return addresses
 }
 
-function preprocessAddresses(addresses: string[]): string[] {
+export function preprocessAddresses(addresses: string[]): string[] {
 	addresses.forEach((address) => {
 		if (!isValidSuiAddress(address)) {
 			throw new Error("invalid sui address in finalize list")
@@ -81,12 +81,12 @@ function preprocessAddresses(addresses: string[]): string[] {
 	return addresses
 }
 
-function batchAddresses(addresses: string[]): string[][]{
+export function batchAddresses(addresses: string[], slot: number): string[][]{
 	// split addresses to chuck
 	if (addresses.length == 0) {
 		throw new Error("list address is empty")
 	}
-	return _.chunk(addresses, MAX_ADDRESSES_PER_VECTOR);
+	return _.chunk(addresses, slot);
 }
 
 async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses: string[][]) {
