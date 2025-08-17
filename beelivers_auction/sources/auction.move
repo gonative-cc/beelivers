@@ -167,11 +167,11 @@ public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) 
     auction.paused = pause;
 }
 
-/// Finalizes the auction. Must be chained with finalize_continue* and finalize_end to finish the
-/// process.
 // NOTE: we can't finalize in a single transaction. Sui tx can only can have 16kb size parameter
 // or 500 addresses.
 // https://move-book.com/guides/building-against-limits#single-pure-argument-size
+/// Finalizes the auction. Must be chained with finalize_continue* and finalize_end to finish the
+/// process.
 public fun finalize_start(
     admin_cap: &AdminCap,
     auction: &mut Auction,
@@ -196,6 +196,8 @@ public fun finalize_continue(
     winners: vector<address>,
 ): AuctionFinalizer {
     assert!(is_sorted(&winners), EWinnersNotSorted);
+    let len = auction.winners.length();
+    assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
     auction.winners.append(winners);
 
     finalizer
@@ -210,9 +212,14 @@ public fun finalize_end(
 ) {
     // consume finalizer to stop hot potato
     let AuctionFinalizer {} = finalizer;
+
     assert!(is_sorted(&winners), EWinnersNotSorted);
-    auction.winners.append(winners);
     let len = auction.winners.length();
+    if (winners.length() > 0) {
+        assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
+        auction.winners.append(winners);
+    };
+
     assert!(0 < len && len <= auction.size, EWrongWinnersSize);
 
     let funds = auction.clearing_price * len;
