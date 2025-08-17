@@ -7,7 +7,7 @@
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\""
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +24,7 @@
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }

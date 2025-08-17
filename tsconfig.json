@@ -1,12 +1,15 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
+		"types": ["node", "vitest/globals"],
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
 		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
 		"outDir": "./dist"
 	},
 	"include": ["scripts/**/*.ts", "scripts/**/*.js"]
