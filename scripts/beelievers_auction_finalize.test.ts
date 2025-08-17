@@ -1,6 +1,6 @@
 import { expect, test, describe } from "vitest";
 
-import { sortAddresses } from "./beelievers_auction_finalize";
+import { sortAddresses } from "./beelievers_auction_finalize.js";
 
 // sample function for Vu
 function sum(a: number, b: number) {
