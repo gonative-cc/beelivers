@@ -169,10 +169,12 @@ public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) 
 
 /// Finalizes the auction. Must be chained with finalize_continue* and finalize_end to finish the
 /// process.
+// NOTE: we can't finalize in a single transaction. Sui tx can only can have 16kb size parameter
+// or 500 addresses.
+// https://move-book.com/guides/building-against-limits#single-pure-argument-size
 public fun finalize_start(
     admin_cap: &AdminCap,
     auction: &mut Auction,
-    // TODO: // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
     winners: vector<address>,
     clearing_price: u64,
     clock: &Clock,
@@ -180,8 +182,6 @@ public fun finalize_start(
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
     assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
-    let len = winners.length();
-    assert!(0 < len && len <= auction.size, EWrongWinnersSize);
     assert!(is_sorted(&winners), EWinnersNotSorted);
 
     auction.finalized = true;
@@ -195,6 +195,7 @@ public fun finalize_continue(
     auction: &mut Auction,
     winners: vector<address>,
 ): AuctionFinalizer {
+    assert!(is_sorted(&winners), EWinnersNotSorted);
     auction.winners.append(winners);
 
     finalizer
@@ -209,10 +210,12 @@ public fun finalize_end(
 ) {
     // consume finalizer to stop hot potato
     let AuctionFinalizer {} = finalizer;
-
+    assert!(is_sorted(&winners), EWinnersNotSorted);
     auction.winners.append(winners);
+    let len = auction.winners.length();
+    assert!(0 < len && len <= auction.size, EWrongWinnersSize);
 
-    let funds = auction.clearing_price * auction.winners.length();
+    let funds = auction.clearing_price * len;
     transfer::public_transfer(
         coin::from_balance(auction.vault.split(funds), ctx),
         ctx.sender(),
