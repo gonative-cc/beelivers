@@ -3,6 +3,8 @@ name: Feature Request
 about: Create a proposal to request a feature
 ---
 
+<!-- markdownlint-disable -->
+
 ## Summary
 
 ## Context

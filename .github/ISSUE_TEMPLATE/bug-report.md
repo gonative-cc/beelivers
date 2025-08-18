@@ -3,6 +3,8 @@ name: Bug Report
 about: Create a report to help us squash bugs!
 ---
 
+<!-- markdownlint-disable -->
+
 ## Summary of Bug
 
 A clear and concise description of what the 🐞 is.
