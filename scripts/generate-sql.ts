@@ -8,16 +8,16 @@ async function main() {
 	program
 		.argument("<file>", "Path to the input CSV file containing Sui addresses.")
 		.option("--amount <number>", "The integer amount to be assigned to each bidder.", (val) =>
-			parseInt(val, 10)
+			parseInt(val, 10),
 		)
 		.option("--typ <number>", "The integer type to be assigned to each bidder.", (val) =>
-			parseInt(val, 10)
+			parseInt(val, 10),
 		)
 		.option(
 			"--batch-size <number>",
 			"The number of rows per SQL INSERT statement.",
 			(val) => parseInt(val, 10),
-			1000
+			1000,
 		);
 
 	program.parse(process.argv);
@@ -47,7 +47,7 @@ async function createSqlFiles(
 	outputDir: string,
 	amount: number,
 	typ: number,
-	batchSize: number
+	batchSize: number,
 ) {
 	console.log(`Reading addresses from: ${inputFile}`);
 	let addresses: string[];
@@ -59,7 +59,7 @@ async function createSqlFiles(
 		console.error(
 			`❌ Error reading or parsing file: ${
 				error instanceof Error ? error.message : String(error)
-			}`
+			}`,
 		);
 		return;
 	}
@@ -93,7 +93,7 @@ async function createSqlFiles(
 			console.error(
 				`❌ Error writing to file ${outputFilename}: ${
 					error instanceof Error ? error.message : String(error)
-				}`
+				}`,
 			);
 		}
 	}
