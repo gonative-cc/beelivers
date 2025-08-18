@@ -1,19 +1,55 @@
 import { expect, test, describe } from "vitest";
+import { batchAddresses, preprocessAddresses } from "./beelievers_auction_finalize.js";
 
-import { sortAddresses } from "./beelievers_auction_finalize.js";
-
-// sample function for Vu
-function sum(a: number, b: number) {
-	return a + b;
-}
-
-describe("sort addresses", () => {
-	test("adds 1 + 2 to equal 3", () => {
-		expect(sum(1, 2)).toBe(3);
+describe("preprocess Address | sort and validate address", () => {
+	test("preprocess happy case", () => {
+		expect(preprocessAddresses([
+			"0x1000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000001"
+		])).toStrictEqual([
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000001",
+			"0x1000000000000000000000000000000000000000000000000000000000000000"
+		])
 	});
 
+	test("preprocess failed case", () => {
+		expect(() => preprocessAddresses([
+			"0x100000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000001"
+		])).toThrow("invalid sui address in finalize list")
+	});
 	test("sorts single address", () => {
-		const addr = "0x0123";
-		expect(sortAddresses([addr])).toEqual([addr]);
+		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
+		expect(preprocessAddresses([addr])).toStrictEqual([addr]);
+	});
+});
+
+
+
+describe("batchAddresses tests", () => {
+	test("batchAddresses happy case", () => {
+		expect(batchAddresses(preprocessAddresses([
+			"0x1000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000001"
+		]), 2)).toStrictEqual([
+			["0x0000000000000000000000000000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000000000000000000000000001"],
+			["0x1000000000000000000000000000000000000000000000000000000000000000"]
+		])
+	});
+
+	test("batchAddresses failed case", () => {
+		expect(() => batchAddresses([
+		], 10)).toThrow("list address is empty")
+	});
+
+	test("batch single addresses", () => {
+		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
+		expect(batchAddresses([addr], 1)).toStrictEqual([[addr]]);
+		expect(batchAddresses([addr], 2)).toStrictEqual([[addr]]);
 	});
 });
