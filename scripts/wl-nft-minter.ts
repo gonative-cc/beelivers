@@ -7,6 +7,8 @@ import { parse } from "csv-parse/sync";
 import { Command } from "commander";
 import * as path from "path";
 
+import { writeToFile } from "./fileio.js";
+
 dotenv.config();
 
 type ReportStatus =
@@ -156,12 +158,7 @@ async function writeReportCSV(reportEntries: ReportEntry[], filename: string) {
 		.map((entry) => `${entry.address},${entry.status},"${entry.reason.replace(/"/g, '""')}"`)
 		.join("\n");
 
-	try {
-		await fs.writeFile(filename, header + rows);
-		console.log("✅ Report saved successfully.");
-	} catch (error) {
-		console.error("❌ Failed to write report file:", error);
-	}
+	return writeToFile(filename, header + rows);
 }
 
 function addMintCallToTransaction(tx: Transaction, batch: string[]) {

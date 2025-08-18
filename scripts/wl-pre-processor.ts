@@ -4,6 +4,8 @@ import * as dotenv from "dotenv";
 import { promises as fs } from "fs";
 import { Command } from "commander";
 
+import { writeToFile } from "./fileio.js";
+
 dotenv.config();
 
 async function main() {
@@ -131,20 +133,9 @@ function validateAddresses(addresses: string[]): string[] {
 	});
 }
 
-async function writeToCsv(addresses: string[], outputFilename: string) {
-	console.log(`\n✍️  Writing ${addresses.length} valid addresses to ${outputFilename}...`);
-	const content = addresses.join("\n");
-	try {
-		await fs.writeFile(outputFilename, content);
-		console.log("✅ File saved successfully.");
-	} catch (error) {
-		console.error(`❌ Error writing to file ${outputFilename}:`, error);
-	}
+async function writeToCsv(addresses: string[], filename: string) {
+	return writeToFile(filename, addresses.join("\n"));
 }
-
-//
-// START
-//
 
 main().catch((error) => {
 	console.error("A fatal error occurred:", error);

@@ -22,19 +22,24 @@ NETWORK="devnet"
 
 ### 3. Execute scripts
 
-Execute the pre-processor.
-It takes list of `csv` files and cleans it up, and resolves any Sui NS.
+Firstly we need to build the JS files:
+
+```bash
+pnpm build
+```
+
+Execute the pre-processor. It takes list of `csv` files and cleans it up, and resolves any Sui NS.
 NOTE: Remember to run it on mainnet so the `suins` are resolved correctly.
 
 ```bash
-pnpm ts-node scripts/wl-pre-processor.ts ./file1.csv ./file2.csv ./file3.csv --output final_WL.csv
+node build/wl-pre-processor.ts ./file1.csv ./file2.csv ./file3.csv --output final_WL.csv
 ```
 
 Execute the script.
 Replace the file path and adjusting the batch size as needed.
 
 ```bash
-pnpm ts-node scripts/wl-nft-minter.ts --file ./final_WL --batch-size 400
+node build/wl-nft-minter.ts --file ./final_WL --batch-size 400
 ```
 
 This will process all addresses from the file and generate a report on which addresses had their NFT minted.

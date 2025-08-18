@@ -6,8 +6,11 @@
   "scripts": {
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "test": "vitest"
+    "build": "tsc -b",
+    "build:watch": "tsc -b -w",
+    "test": "vitest",
+    "run-tsscript": "node --loader ts-node/esm",
+    "run-tsscript:wl-pre-processor": "node --loader ts-node/esm scripts/wl-pre-processor.ts"
   },
   "keywords": [],
   "author": "",

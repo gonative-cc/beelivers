@@ -2,15 +2,19 @@
 	"compilerOptions": {
 		"target": "ES2022",
 		"types": ["node", "vitest/globals"],
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
 		"skipLibCheck": true,
 		"verbatimModuleSyntax": true,
-		"noEmit": true,
-		"outDir": "./dist"
+		// "noEmit": true,
+
+		"outDir": "./build",
+		"rootDir": "./scripts"
+		/* NOTE: The baseUrl and paths options in tsconfig.json are solely for the TypeScript compiler's type-checking and module resolution during the compilation phase. When tsc compiles your .ts files to .js, it leaves the import paths exactly as they are.
+			To use when executing with Node, we would need to integrate other tool like tsc-alias*/
 	},
-	"include": ["scripts/**/*.ts", "scripts/**/*.js"]
+	"include": ["scripts/**/*.ts", "scripts/**/*.js", "scripts/vitest.config.ts"]
 }

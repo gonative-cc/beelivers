@@ -21,6 +21,10 @@ describe("preprocess Address | sort and validate address", () => {
 			"0x0000000000000000000000000000000000000000000000000000000000000001"
 		])).toThrow("invalid sui address in finalize list")
 	});
+	test("sorts single address", () => {
+		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
+		expect(preprocessAddresses([addr])).toStrictEqual([addr]);
+	});
 });
 
 
@@ -38,8 +42,14 @@ describe("batchAddresses tests", () => {
 		])
 	});
 
-	test("preprocess failed case", () => {
+	test("batchAddresses failed case", () => {
 		expect(() => batchAddresses([
 		], 10)).toThrow("list address is empty")
+	});
+
+	test("batch single addresses", () => {
+		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
+		expect(batchAddresses([addr], 1)).toStrictEqual([[addr]]);
+		expect(batchAddresses([addr], 2)).toStrictEqual([[addr]]);
 	});
 });

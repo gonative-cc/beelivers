@@ -70,10 +70,10 @@ export function preprocessAddresses(addresses: string[]): string[] {
 	})
 
 	addresses.sort((x, y) => {
-		const x = BigInt(x);
-		const y = BigInt(y)
-		if (x < y) return -1;
-		return x > y ? 1 : 0;
+		const xx = BigInt(x);
+		const yy = BigInt(y)
+		if (xx < yy) return -1;
+		return xx > yy ? 1 : 0;
 	});
 	return addresses
 }
@@ -151,3 +151,13 @@ async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses:
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
+
+
+
+//
+// START
+//
+
+main().catch((error) => {
+	console.error("A fatal error occurred in the main function:", error);
+});
