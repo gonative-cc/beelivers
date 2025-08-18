@@ -31,7 +31,8 @@ async function main() {
 	}
 
 	const inputFilename = path.basename(inputFile, path.extname(inputFile));
-	const outputDir = `${inputFilename}_sql`;
+	const sanitizedFilename = inputFilename.replace(/[^a-zA-Z0-9_-]/g, "");
+	const outputDir = `${sanitizedFilename}_sql`;
 
 	await createSqlFiles(inputFile, outputDir, amount, typ, batchSize);
 
