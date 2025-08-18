@@ -70,13 +70,10 @@ export function preprocessAddresses(addresses: string[]): string[] {
 	})
 
 	addresses.sort((x, y) => {
-		if (BigInt(x) < BigInt(y)) {
-			return -1
-		}
-		if (BigInt(x) > BigInt(y)) {
-			return 1
-		}
-		return 0
+		const x = BigInt(x);
+		const y = BigInt(y)
+		if (x < y) return -1;
+		return x > y ? 1 : 0;
 	});
 	return addresses
 }
