@@ -11,7 +11,7 @@ dotenv.config();
 async function main() {
 	const program = new Command();
 	program
-		.argument("<files...>", "A list of file paths to process")
+		.argument("<files...>", "A list of CSV files to process")
 		.option(
 			"-o, --output <filename>",
 			"The name of the output CSV file",

@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
+  "packageManager": "pnpm@10.14.0",
   "scripts": {
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
@@ -15,7 +17,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@mysten/sui": "^1.37.2",
     "commander": "^14.0.0",

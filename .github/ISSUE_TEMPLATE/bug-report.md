@@ -3,8 +3,7 @@ name: Bug Report
 about: Create a report to help us squash bugs!
 ---
 
-<!-- markdownlint-disable MD041 -->
-<!-- markdownlint-disable MD003 -->
+<!-- markdownlint-disable -->
 
 ## Summary of Bug
 
