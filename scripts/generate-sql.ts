@@ -7,9 +7,6 @@ async function main() {
 	const program = new Command();
 	program
 		.argument("<file>", "Path to the input CSV file containing Sui addresses.")
-		.option("--amount <number>", "The integer amount to be assigned to each bidder.", (val) =>
-			parseInt(val, 10),
-		)
 		.option("--typ <number>", "The integer type to be assigned to each bidder.", (val) =>
 			parseInt(val, 10),
 		)
@@ -17,7 +14,7 @@ async function main() {
 			"--batch-size <number>",
 			"The number of rows per SQL INSERT statement.",
 			(val) => parseInt(val, 10),
-			1000,
+			10000,
 		);
 
 	program.parse(process.argv);
@@ -81,7 +78,7 @@ async function createSqlFiles(
 		const sqlStatement =
 			`INSERT INTO bids (bidder, amount, timestamp, typ) VALUES\n` +
 			batch
-				.map((address) => `  ('${address}', ${amount}, strftime('%s', 'now'), ${typ})`)
+				.map((address) => `  ('${address}', 0, strftime('%s', 'now'), ${typ})`)
 				.join(",\n") +
 			";";
 
