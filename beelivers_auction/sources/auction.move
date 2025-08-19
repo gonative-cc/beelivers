@@ -189,9 +189,12 @@ public fun finalize_continue(
     admin_cap: &AdminCap,
     auction: &mut Auction,
     winners: vector<address>,
+    clock: &Clock,
 ) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(is_sorted(&winners), EWinnersNotSorted);
+    assert!(!auction.finalized, EAlreadyFinalized);
+    assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
     let len = auction.winners.length();
     assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
     auction.winners.append(winners);
@@ -205,6 +208,7 @@ public fun finalize_end(
     ctx: &mut TxContext,
 ) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
+    assert!(!auction.finalized, EAlreadyFinalized);
 
     // update status of auction
     auction.finalized = true;
