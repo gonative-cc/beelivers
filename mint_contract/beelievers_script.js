@@ -7,8 +7,6 @@ import { fromHex } from '@mysten/sui/utils';
 import { bech32 } from 'bech32';
 import fs from 'fs/promises';
 import { KioskTransaction } from '@mysten/kiosk';
-import path from 'path';
-import { bcs } from '@mysten/sui/bcs';
 import { TransferPolicyTransaction } from '@mysten/kiosk';
 import { Secp256k1Keypair } from '@mysten/sui.js/keypairs/secp256k1';
 
