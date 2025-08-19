@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #9",
+  "description": "A rare mythical Beeliever: nativ barbee",
+  "image": "9.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "nativ barbee"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "9.png"
+      }
+    ],
+    "category": "image"
+  }
+}

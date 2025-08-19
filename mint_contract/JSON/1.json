@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #1",
+  "description": "A rare mythical Beeliever: alien",
+  "image": "1.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "alien"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "1.png"
+      }
+    ],
+    "category": "image"
+  }
+}

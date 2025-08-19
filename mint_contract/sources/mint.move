@@ -111,7 +111,7 @@ module beelievers::mint {
             minted_addresses: table::new<address, bool>(ctx),
             remaining_partners: 0, 
             auction_contract: @0x0,
-            treasury_address: @0xa3585953487cf72b94233df0895ae7f6bb05c873772f6ad956dac9cafb946d5d,
+            treasury_address: @0x0,
             mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             nft_badges: table::new<u64, String>(ctx),
@@ -286,17 +286,7 @@ module beelievers::mint {
         };
     }
 
-    public entry fun set_auction_contract(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        auction_contract: address
-    ) {
-        collection.auction_contract = auction_contract;
-
-        event::emit(AuctionContractUpdated {
-            new_contract: auction_contract,
-        });
-    }
+ 
 
     public entry fun start_minting(
         _admin_cap: &AdminCap,
@@ -702,8 +692,5 @@ module beelievers::mint {
         collection.mint_start_time
     }
 
-    public fun get_auction_contract(collection: &BeelieversCollection): address {
-        collection.auction_contract
-    }
 
 } 

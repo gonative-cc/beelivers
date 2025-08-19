@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #2",
+  "description": "A rare mythical Beeliever: yoda",
+  "image": "2.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "yoda"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "2.png"
+      }
+    ],
+    "category": "image"
+  }
+}

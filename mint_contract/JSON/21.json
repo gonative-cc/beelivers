@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #21",
+  "description": "A rare mythical Beeliever: munch",
+  "image": "21.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "munch"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "21.png"
+      }
+    ],
+    "category": "image"
+  }
+}
