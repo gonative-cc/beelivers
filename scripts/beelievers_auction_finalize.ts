@@ -21,6 +21,7 @@ async function main() {
 
 
 	if (program.args.length != 1) {
+
 		console.error("❌ Error: Please provide at least one file to process.");
 		process.exit(1);
 	}
@@ -49,6 +50,8 @@ async function main() {
 		let addresses = await readAddressesFromFile(file);
 		addresses = preprocessAddresses(addresses);
 		let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
+
+		console.log(bAddreses)
 		await createPTB(client, keypair, bAddreses);
 	} catch(err) {
 		console.error("❌ Error: ", err);
@@ -58,11 +61,11 @@ async function main() {
 
 export async function readAddressesFromFile(filePath: string): Promise<string[]> {
 	const content = await fs.readFile(filePath, "utf8");
-	return content.split("\n");
-
+	return content.trim().split("\n").map(addr => addr.trim());
 }
 
 export function preprocessAddresses(addresses: string[]): string[] {
+	console.log(addresses)
 	addresses.forEach((address) => {
 		if (!isValidSuiAddress(address)) {
 			throw new Error("invalid sui address in finalize list")
@@ -92,43 +95,44 @@ async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses:
 
 	let txn = new Transaction();
 
-	let auction = txn.object(ADMIN_CAP_ID as string);
-	let admin_cap = txn.object(AUCTION_ID as string);
+	let auction = txn.object(AUCTION_ID as string);
+	let admin_cap = txn.object(ADMIN_CAP_ID as string);
 	let finalizer = txn.moveCall({
 		target: `${PACKAGE_ID}::auction::finalize_start`,
 		arguments: [
 			admin_cap,
 			auction,
 			txn.pure("vector<address>", addresses[0]),
-			txn.pure("u64", CLEAR_PRICE as string),
+			txn.pure("u64", parseInt(CLEAR_PRICE as string)),
 			txn.object.clock()
 		]
 	});
-
 	if (number_txn == 1) {
 		txn.moveCall({
 			target: `${PACKAGE_ID}::auction::finalize_end`,
 			arguments: [
 				finalizer,
 				auction,
-				txn.pure("vector<address>", []),
+				txn.pure.vector("address", [])
 			]
 		})
 	} else {
+		let previous_finalizer = finalizer;
 		for (let i = 1; i < number_txn - 1; i++) {
-			txn.moveCall({
-			target: `${PACKAGE_ID}::auction::finalize_continue`,
-			arguments: [
-				finalizer,
-				auction,
-				txn.pure("vector<address>", addresses[i]),
-			]
-		})
+			let finalizer = txn.moveCall({
+				target: `${PACKAGE_ID}::auction::finalize_continue`,
+				arguments: [
+					previous_finalizer,
+					auction,
+					txn.pure("vector<address>", addresses[i]),
+				]
+			})
+			previous_finalizer = finalizer;
 		}
 		txn.moveCall({
 			target: `${PACKAGE_ID}::auction::finalize_end`,
 			arguments: [
-				finalizer,
+				previous_finalizer,
 				auction,
 				txn.pure("vector<address>", addresses[number_txn - 1]),
 			]
