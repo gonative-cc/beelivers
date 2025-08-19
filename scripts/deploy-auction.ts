@@ -1,9 +1,6 @@
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 
 import * as dotenv from "dotenv";
-import { promises as fs } from "fs";
-import { Command } from "commander";
-import _, { result } from 'lodash';
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
@@ -11,18 +8,6 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 dotenv.config();
 
 async function main() {
-	const program = new Command();
-	program
-		.argument("<file...>", "A finalized addresses file");
-
-	program.parse(process.argv);
-
-
-	if (program.args.length != 1) {
-		console.error("❌ Error: Please provide at least one file to process.");
-		process.exit(1);
-	}
-
 	const { MNEMONIC, PACKAGE_ID, NETWORK, START_MS, DURATION_MS, AUCTION_SIZE} = process.env;
 
 	if (!MNEMONIC || !PACKAGE_ID || !NETWORK || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
@@ -80,15 +65,14 @@ async function main() {
 	if (result.effects?.status.status === "success") {
 		console.log(`✅ Auction finalize successful!`);
 		console.log(`   🔗 Digest: ${result.digest}`);
-
-		console.log(`ADMIN_CAP_ID = ${admin}`)
-		console.log(`AUCTION_ID= ${result.events?.[0].parsedJson}`);
+		const data = result.events?.[0].parsedJson as any;
+		console.log(`ADMIN_CAP_ID = ${data["admin_cap_id"]}`)
+		console.log(`AUCTION_ID= ${data["auction_id"]}`);
 	} else {
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 
 }
-
 
 
 
