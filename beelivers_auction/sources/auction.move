@@ -61,6 +61,11 @@ public struct Auction has key, store {
     finalized: bool,
 }
 
+public struct AuctionCreateEvent has copy, drop {
+    auction_id: ID,
+    admin_cap_id: ID
+}
+
 public struct BidEvent has copy, drop {
     auction_id: ID,
     /// bidder (tx sender) total (aggregated) bid amount
@@ -91,6 +96,12 @@ public fun create(
     ctx: &mut TxContext,
 ) {
     let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
+
+    emit(AuctionCreateEvent{
+	auction_id: object::id(&auction),
+	admin_cap_id: object::id(admin_cap)
+    });
+
     transfer::public_share_object(auction)
 }
 
