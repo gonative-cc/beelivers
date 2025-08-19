@@ -63,6 +63,7 @@ async function main() {
 
 export async function readAddressesFromFile(filePath: string): Promise<string[]> {
 	const content = await fs.readFile(filePath, "utf8");
+
 	return content
 		.trim()
 		.split("\n")
