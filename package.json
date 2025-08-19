@@ -10,9 +10,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -b",
     "build:watch": "tsc -b -w",
-    "test": "vitest",
-    "run-tsscript": "node --loader ts-node/esm",
-    "run-tsscript:wl-pre-processor": "node --loader ts-node/esm scripts/wl-pre-processor.ts"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +25,6 @@
   "devDependencies": {
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

@@ -43,3 +43,6 @@ node build/wl-nft-minter.js --file ./final_WL.csv --batch-size 500
 ```
 
 This will process all addresses from the file and generate a report on which addresses had their NFT minted.
+
+NOTE: We can also run ts scripts directly through ts-node. That would require installing ts-node as a dev dependency.
+The running format is: `node --loader ts-node/esm scripts/<filename.ts>`.
