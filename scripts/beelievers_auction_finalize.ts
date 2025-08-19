@@ -3,10 +3,9 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 import * as dotenv from "dotenv";
 import { promises as fs } from "fs";
 import { Command } from "commander";
-import _ from 'lodash';
+import _ from "lodash";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-
 
 const MAX_ADDRESSES_PER_VECTOR = 500;
 
@@ -14,11 +13,9 @@ dotenv.config();
 
 async function main() {
 	const program = new Command();
-	program
-		.argument("<file...>", "A finalized addresses file");
+	program.argument("<file...>", "A finalized addresses file");
 
 	program.parse(process.argv);
-
 
 	if (program.args.length != 1) {
 
@@ -27,7 +24,8 @@ async function main() {
 	}
 	const file = program.args[0];
 
-	const { MNEMONIC, PACKAGE_ID, PUBLISHER_ID, NETWORK, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE} = process.env;
+	const { MNEMONIC, PACKAGE_ID, PUBLISHER_ID, NETWORK, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } =
+		process.env;
 
 	if (!MNEMONIC || !PACKAGE_ID || !NETWORK || !ADMIN_CAP_ID || !AUCTION_ID || !CLEAR_PRICE) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
@@ -53,7 +51,7 @@ async function main() {
 
 		console.log(bAddreses)
 		await createPTB(client, keypair, bAddreses);
-	} catch(err) {
+	} catch (err) {
 		console.error("❌ Error: ", err);
 		process.exit(1);
 	}
@@ -65,32 +63,31 @@ export async function readAddressesFromFile(filePath: string): Promise<string[]>
 }
 
 export function preprocessAddresses(addresses: string[]): string[] {
-	console.log(addresses)
 	addresses.forEach((address) => {
 		if (!isValidSuiAddress(address)) {
-			throw new Error("invalid sui address in finalize list")
+			throw new Error("invalid sui address in finalize list");
 		}
-	})
+	});
 
 	addresses.sort((x, y) => {
 		const xx = BigInt(x);
-		const yy = BigInt(y)
+		const yy = BigInt(y);
 		if (xx < yy) return -1;
 		return xx > yy ? 1 : 0;
 	});
-	return addresses
+	return addresses;
 }
 
-export function batchAddresses(addresses: string[], slot: number): string[][]{
+export function batchAddresses(addresses: string[], slot: number): string[][] {
 	// split addresses to chuck
 	if (addresses.length == 0) {
-		throw new Error("list address is empty")
+		throw new Error("list address is empty");
 	}
 	return _.chunk(addresses, slot);
 }
 
-async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses: string[][]) {
-	const { PACKAGE_ID, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE} = process.env;
+async function createPTB(client: SuiClient, keypair: Ed25519Keypair, addresses: string[][]) {
+	const { PACKAGE_ID, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } = process.env;
 	let number_txn = addresses.length;
 
 	let txn = new Transaction();
@@ -144,8 +141,8 @@ async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses:
 		signer: keypair,
 		options: {
 			showEvents: true,
-			showEffects: true
-		}
+			showEffects: true,
+		},
 	});
 
 	if (result.effects?.status.status === "success") {
@@ -155,8 +152,6 @@ async function createPTB(client: SuiClient, keypair: Ed25519Keypair,  addresses:
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-
-
 
 //
 // START
