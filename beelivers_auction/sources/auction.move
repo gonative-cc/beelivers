@@ -31,6 +31,7 @@ const EBidZeroSui: u64 = 12;
 const ENotAdmin: u64 = 13;
 const EInsufficientBidForWinner: u64 = 14;
 const EPaused: u64 = 15;
+const EUpdateStateAfterFinalized: u64 = 16;
 
 // ========== Structs ==========
 
@@ -38,7 +39,6 @@ public struct AdminCap has key, store {
     id: UID,
 }
 
-public struct AuctionFinalizer {}
 
 public struct Auction has key, store {
     id: UID,
@@ -176,50 +176,41 @@ public fun finalize_start(
     admin_cap: &AdminCap,
     auction: &mut Auction,
     winners: vector<address>,
-    clearing_price: u64,
     clock: &Clock,
-): AuctionFinalizer {
+){
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
     assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
     assert!(is_sorted(&winners), EWinnersNotSorted);
-
-    auction.finalized = true;
-    auction.clearing_price = clearing_price;
     auction.winners = winners;
-    AuctionFinalizer {}
 }
 
 public fun finalize_continue(
-    finalizer: AuctionFinalizer,
+    admin_cap: &AdminCap,
     auction: &mut Auction,
     winners: vector<address>,
-): AuctionFinalizer {
+) {
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(is_sorted(&winners), EWinnersNotSorted);
     let len = auction.winners.length();
     assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
     auction.winners.append(winners);
-
-    finalizer
 }
 
 #[allow(lint(self_transfer))]
 public fun finalize_end(
-    finalizer: AuctionFinalizer,
+    admin_cap: &AdminCap,
     auction: &mut Auction,
-    winners: vector<address>,
+    clearing_price: u64,
     ctx: &mut TxContext,
 ) {
-    // consume finalizer to stop hot potato
-    let AuctionFinalizer {} = finalizer;
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
 
-    assert!(is_sorted(&winners), EWinnersNotSorted);
+    // update status of auction
+    auction.finalized = true;
+    auction.clearing_price = clearing_price;
+
     let len = auction.winners.length();
-    if (winners.length() > 0) {
-        assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
-        auction.winners.append(winners);
-    };
-
     assert!(0 < len && len <= auction.size, EWrongWinnersSize);
 
     let funds = auction.clearing_price * len;
@@ -233,6 +224,16 @@ public fun finalize_end(
         funds,
         clearing_price: auction.clearing_price,
     });
+}
+
+
+public fun reset_status(
+    admin_cap: &AdminCap,
+    auction: &mut Auction
+) {
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
+    assert!(!auction.finalized, EUpdateStateAfterFinalized);
+    auction.winners = vector::empty();
 }
 
 /// Allows any user to withdraw their funds after the auction is finalized.
