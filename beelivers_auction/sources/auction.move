@@ -62,7 +62,8 @@ public struct Auction has key, store {
 }
 
 public struct AuctionCreateEvent has copy, drop {
-    auction_id: ID
+    auction_id: ID,
+    admin_cap_id: ID
 }
 
 public struct BidEvent has copy, drop {
@@ -97,7 +98,8 @@ public fun create(
     let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
 
     emit(AuctionCreateEvent{
-	auction_id: object::id(&auction)
+	auction_id: object::id(&auction),
+	admin_cap_id: object::id(admin_cap)
     });
 
     transfer::public_share_object(auction)
