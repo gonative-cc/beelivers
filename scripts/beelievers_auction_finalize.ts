@@ -11,6 +11,12 @@ const MAX_ADDRESSES_PER_VECTOR = 500;
 
 dotenv.config();
 
+const PACKAGE_ID = "";
+const PUBLISHER_ID = "";
+const NETWORK = "";
+const ADMIN_CAP_ID = "";
+const AUCTION_ID = "";
+const CLEAR_PRICE = "";
 async function main() {
 	const program = new Command();
 	program.argument("<file...>", "A finalized addresses file");
@@ -18,14 +24,12 @@ async function main() {
 	program.parse(process.argv);
 
 	if (program.args.length != 1) {
-
 		console.error("❌ Error: Please provide at least one file to process.");
 		process.exit(1);
 	}
 	const file = program.args[0];
 
-	const { MNEMONIC, PACKAGE_ID, PUBLISHER_ID, NETWORK, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } =
-		process.env;
+	const { MNEMONIC } = process.env;
 
 	if (!MNEMONIC || !PACKAGE_ID || !NETWORK || !ADMIN_CAP_ID || !AUCTION_ID || !CLEAR_PRICE) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
@@ -49,7 +53,7 @@ async function main() {
 		addresses = preprocessAddresses(addresses);
 		let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
 
-		console.log(bAddreses)
+		console.log(bAddreses);
 		await createPTB(client, keypair, bAddreses);
 	} catch (err) {
 		console.error("❌ Error: ", err);
@@ -59,7 +63,10 @@ async function main() {
 
 export async function readAddressesFromFile(filePath: string): Promise<string[]> {
 	const content = await fs.readFile(filePath, "utf8");
-	return content.trim().split("\n").map(addr => addr.trim());
+	return content
+		.trim()
+		.split("\n")
+		.map((addr) => addr.trim());
 }
 
 export function preprocessAddresses(addresses: string[]): string[] {
@@ -94,29 +101,21 @@ async function createPTB(client: SuiClient, keypair: Ed25519Keypair, addresses: 
 		await next(client, keypair, addresses[i]);
 	}
 
-	await finalize(client, keypair)
+	await finalize(client, keypair);
 }
 
 //
 // START
 //
 
-
 async function start(client: SuiClient, keypair: Ed25519Keypair, addresses: string[]) {
-	const { PACKAGE_ID, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } = process.env;
-
 	let txn = new Transaction();
 
 	let auction = txn.object(AUCTION_ID as string);
 	let admin_cap = txn.object(ADMIN_CAP_ID as string);
 	txn.moveCall({
 		target: `${PACKAGE_ID}::auction::finalize_start`,
-		arguments: [
-			admin_cap,
-			auction,
-			txn.pure("vector<address>", addresses),
-			txn.object.clock()
-		]
+		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
 	const result = await client.signAndExecuteTransaction({
@@ -128,30 +127,22 @@ async function start(client: SuiClient, keypair: Ed25519Keypair, addresses: stri
 		},
 	});
 
-	await client.waitForTransaction({digest: result.digest})
-	if (result.effects?.status.status === "success") {;
+	await client.waitForTransaction({ digest: result.digest });
+	if (result.effects?.status.status === "success") {
 		console.log(`   🔗 Digest: ${result.digest}`);
 	} else {
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-async function next(client: SuiClient, keypair: Ed25519Keypair,addresses: string[]) {
-	const { PACKAGE_ID, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } = process.env;
-
+async function next(client: SuiClient, keypair: Ed25519Keypair, addresses: string[]) {
 	let txn = new Transaction();
 
 	let auction = txn.object(AUCTION_ID as string);
 	let admin_cap = txn.object(ADMIN_CAP_ID as string);
 	txn.moveCall({
 		target: `${PACKAGE_ID}::auction::finalize_continue`,
-		arguments: [
-			admin_cap,
-			auction,
-			txn.pure("vector<address>", addresses),
-			txn.object.clock()
-		]
+		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
-
 
 	const result = await client.signAndExecuteTransaction({
 		transaction: txn,
@@ -161,8 +152,8 @@ async function next(client: SuiClient, keypair: Ed25519Keypair,addresses: string
 			showEffects: true,
 		},
 	});
-	await client.waitForTransaction({digest: result.digest})
-	if (result.effects?.status.status === "success") {;
+	await client.waitForTransaction({ digest: result.digest });
+	if (result.effects?.status.status === "success") {
 		console.log(`   🔗 Digest: ${result.digest}`);
 	} else {
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
@@ -170,20 +161,13 @@ async function next(client: SuiClient, keypair: Ed25519Keypair,addresses: string
 }
 
 async function finalize(client: SuiClient, keypair: Ed25519Keypair) {
-
-	const { PACKAGE_ID, ADMIN_CAP_ID, AUCTION_ID, CLEAR_PRICE } = process.env;
-
 	let txn = new Transaction();
 	let auction = txn.object(AUCTION_ID as string);
 	let admin_cap = txn.object(ADMIN_CAP_ID as string);
 	txn.moveCall({
-			target: `${PACKAGE_ID}::auction::finalize_end`,
-		arguments: [
-				admin_cap,
-			auction,
-				txn.pure("u64", parseInt(CLEAR_PRICE as string)),
-		]
-	})
+		target: `${PACKAGE_ID}::auction::finalize_end`,
+		arguments: [admin_cap, auction, txn.pure("u64", parseInt(CLEAR_PRICE as string))],
+	});
 
 	const result = await client.signAndExecuteTransaction({
 		transaction: txn,
@@ -193,7 +177,7 @@ async function finalize(client: SuiClient, keypair: Ed25519Keypair) {
 			showEffects: true,
 		},
 	});
-	await client.waitForTransaction({digest: result.digest})
+	await client.waitForTransaction({ digest: result.digest });
 	if (result.effects?.status.status === "success") {
 		console.log(`✅ Auction finalize successful!`);
 		console.log(`   🔗 Digest: ${result.digest}`);
