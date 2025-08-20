@@ -32,6 +32,8 @@ const EBidZeroSui: u64 = 12;
 const ENotAdmin: u64 = 13;
 const EInsufficientBidForWinner: u64 = 14;
 const EPaused: u64 = 15;
+const ERaffleTooBig: u64 = 16;
+const ERaffleAlreadyDone: u64 = 17;
 
 // ========== Structs ==========
 
@@ -252,7 +254,7 @@ public fun finalize_end(
 #[allow(lint(public_random))]
 /// returns the raffle winners
 public entry fun run_raffle(
-    auction: &Auction,
+    auction: &mut Auction,
     admin_cap: &AdminCap,
     num_winners: u32,
     r: &Random,
@@ -260,10 +262,14 @@ public entry fun run_raffle(
 ): vector<address> {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
+    assert!(!auction.raffle_done, ERaffleAlreadyDone);
+    auction.raffle_done = true;
+
+    let max = auction.winners.length() as u32;
+    assert!(num_winners <= max / 2, ERaffleTooBig);
 
     let mut raffle_winners: vector<address> = vector[];
     let mut generator = r.new_generator(ctx);
-    let max = auction.winners.length() as u32;
     let mut n = 1;
     while (n <=num_winners) {
         let rnd = generator.generate_u32_in_range(1, max);
