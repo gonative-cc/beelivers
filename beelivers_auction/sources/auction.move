@@ -111,6 +111,7 @@ public fun create(
     transfer::public_share_object(auction)
 }
 
+// helper function to be used with tests
 public(package) fun create_(
     admin_cap: &AdminCap,
     start_ms: u64,
@@ -249,13 +250,14 @@ public fun finalize_end(
 }
 
 #[allow(lint(public_random))]
+/// returns the raffle winners
 public entry fun run_raffle(
     auction: &Auction,
-    num_winners: u32,
     admin_cap: &AdminCap,
+    num_winners: u32,
     r: &Random,
     ctx: &mut TxContext,
-) {
+): vector<address> {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
 
@@ -276,6 +278,7 @@ public entry fun run_raffle(
         auction_id: auction.id.to_inner(),
         winners: raffle_winners,
     });
+    raffle_winners
 }
 
 public fun reset_status(admin_cap: &AdminCap, auction: &mut Auction) {
@@ -447,28 +450,6 @@ fun test_bisect_address() {
 }
 
 #[test_only]
-fun dummy_tx(sender: address, time_ms: u64): TxContext {
-    tx_context::new_from_hint(sender, 1, 1, time_ms, 0)
-}
-
-#[test_only]
-fun cleanup(a: Auction, ac: AdminCap) {
-    sui::test_utils::destroy(a);
-    sui::test_utils::destroy(ac);
-}
-
-#[test_only]
-use sui::clock;
-
-#[test]
-fun test_create_auction_valid() {
-    let mut ctx = dummy_tx(@0x1, 1);
-    let mut c = clock::create_for_testing(&mut ctx);
-    let admin_cap = create_admin_cap(&mut ctx);
-    let a = create_(&admin_cap, 1000+ONE_HOUR, ONE_HOUR, 5, &c, &mut ctx);
-    cleanup(a, admin_cap);
-    c.destroy_for_testing();
-    // object::delete(admin_cap.id);
-    // assert!(a == 3700);
-    // assert!(a.end_time == 7300, 0);
+public(package) fun set_winners(a: &mut Auction, winners: vector<address>) {
+    a.winners = winners;
 }
