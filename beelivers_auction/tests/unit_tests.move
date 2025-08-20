@@ -7,7 +7,7 @@ use sui::clock::{Self, Clock};
 use sui::random::{Self, Random};
 use sui::test_scenario as ts;
 
-const ONE_HOUR: u64 = 60 * 60 *1000;
+const ONE_HOUR: u64 = 3600 * 1000;
 
 // fun dummy_tx(sender: address, time_ms: u64): TxContext {
 //     tx_context::new_from_hint(sender, 1, 1, time_ms, 0)

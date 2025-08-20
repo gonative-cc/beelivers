@@ -271,12 +271,12 @@ public entry fun run_raffle(
     let mut raffle_winners: vector<address> = vector[];
     let mut generator = r.new_generator(ctx);
     let mut n = 1;
-    while (n <=num_winners) {
+    while (n <= num_winners) {
         let rnd = generator.generate_u32_in_range(0, max-1);
         let winner = auction.winners[rnd as u64];
         if (!raffle_winners.contains(&winner)) {
             raffle_winners.push_back(winner);
-            n = n +1;
+            n = n + 1;
         }
     };
 
