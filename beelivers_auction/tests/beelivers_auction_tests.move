@@ -108,7 +108,7 @@ fun withdraw(mut scenario: Scenario, bidder: address, expected_coin: u64): Scena
 #[test]
 fun flow_happy_tests() {
     let admin = @0x01;
-    let bidder = vector[@0x100, @0x101, @0x102];
+    let bidder = vector[@0x100, @0x101, @0x102, @0x103];
     let mut scenario = test_scenario::begin(admin);
     {
         let clock = create_for_testing(scenario.ctx());
@@ -124,11 +124,28 @@ fun flow_happy_tests() {
     scenario = bid_with_user(scenario, bidder[1], 2 * ONE_SUI);
     scenario = bid_with_user(scenario, bidder[2], 5 * ONE_SUI);
 
+    // auction 2 times from bidder[3]
+    scenario = bid_with_user(scenario, bidder[3], 1 * ONE_SUI);
+    scenario = bid_with_user(scenario, bidder[3], 1 * ONE_SUI);
+
     scenario = final(scenario, admin, vector[bidder[1], bidder[2]], 2 * ONE_SUI);
 
     scenario = withdraw(scenario, bidder[0], ONE_SUI);
     scenario = withdraw(scenario, bidder[1], 0);
     scenario = withdraw(scenario, bidder[2], 3 * ONE_SUI);
+    scenario = withdraw(scenario, bidder[3], 2 * ONE_SUI);
+
+    scenario.next_tx(admin);
+
+    {
+	let auction: Auction = scenario.take_shared();
+
+	assert_eq!(auction.is_finalized(), true);
+	assert_eq!(auction.is_winner(bidder[0]), false);
+	assert_eq!(auction.is_winner(@0x10000), false);
+	assert_eq!(auction.query_total_bid(bidder[0]), option::none());
+	return_shared(auction);
+    };
     scenario.end();
 }
 
