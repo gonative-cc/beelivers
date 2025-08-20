@@ -103,6 +103,7 @@ public fun create(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
+
     let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
 
     emit(AuctionCreateEvent {
