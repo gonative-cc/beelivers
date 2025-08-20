@@ -6,6 +6,7 @@ use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event::emit;
+use sui::random::Random;
 use sui::sui::SUI;
 use sui::table::{Self, Table};
 
@@ -31,7 +32,6 @@ const EBidZeroSui: u64 = 12;
 const ENotAdmin: u64 = 13;
 const EInsufficientBidForWinner: u64 = 14;
 const EPaused: u64 = 15;
-const EUpdateStateAfterFinalized: u64 = 16;
 
 // ========== Structs ==========
 
@@ -39,14 +39,13 @@ public struct AdminCap has key, store {
     id: UID,
 }
 
-
 public struct Auction has key, store {
     id: UID,
     // TODO: consider removing this and use address.
     admin_cap_id: ID,
     paused: bool,
     /// number of items to bid
-    size: u64,
+    size: u32,
     /// auction start time in ms, inclusive
     start_ms: u64,
     /// auction end time in ms, exclusive
@@ -59,17 +58,23 @@ public struct Auction has key, store {
     /// The price winning bidders are going to pay
     clearing_price: u64,
     finalized: bool,
+    raffle_done: bool,
 }
 
 public struct AuctionCreateEvent has copy, drop {
     auction_id: ID,
-    admin_cap_id: ID
+    admin_cap_id: ID,
 }
 
 public struct BidEvent has copy, drop {
     auction_id: ID,
     /// bidder (tx sender) total (aggregated) bid amount
     total_bid_amount: u64,
+}
+
+public struct RaffleResultEvent has copy, drop {
+    auction_id: ID,
+    winners: vector<address>,
 }
 
 public struct FinalizedEvent has copy, drop {
@@ -86,20 +91,21 @@ public fun create_admin_cap(ctx: &mut TxContext): AdminCap {
     }
 }
 
+#[allow(lint(share_owned))]
 /// creates a new Auction (shared object) and associate it with the provided AdminCap.
 public fun create(
     admin_cap: &AdminCap,
     start_ms: u64,
     duration_ms: u64,
-    size: u64,
+    size: u32,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
 
-    emit(AuctionCreateEvent{
-	auction_id: object::id(&auction),
-	admin_cap_id: object::id(admin_cap)
+    emit(AuctionCreateEvent {
+        auction_id: object::id(&auction),
+        admin_cap_id: object::id(admin_cap),
     });
 
     transfer::public_share_object(auction)
@@ -109,7 +115,7 @@ public(package) fun create_(
     admin_cap: &AdminCap,
     start_ms: u64,
     duration_ms: u64,
-    size: u64,
+    size: u32,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Auction {
@@ -128,6 +134,7 @@ public(package) fun create_(
         winners: vector::empty(),
         clearing_price: 0,
         finalized: false,
+        raffle_done: false,
     }
 }
 
@@ -188,7 +195,7 @@ public fun finalize_start(
     auction: &mut Auction,
     winners: vector<address>,
     clock: &Clock,
-){
+) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
     assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
@@ -226,7 +233,7 @@ public fun finalize_end(
     auction.clearing_price = clearing_price;
 
     let len = auction.winners.length();
-    assert!(0 < len && len <= auction.size, EWrongWinnersSize);
+    assert!(0 < len && len <= auction.size as u64, EWrongWinnersSize);
 
     let funds = auction.clearing_price * len;
     transfer::public_transfer(
@@ -241,13 +248,40 @@ public fun finalize_end(
     });
 }
 
-
-public fun reset_status(
+#[allow(lint(public_random))]
+public entry fun run_raffle(
+    auction: &Auction,
+    num_winners: u32,
     admin_cap: &AdminCap,
-    auction: &mut Auction
+    r: &Random,
+    ctx: &mut TxContext,
 ) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EUpdateStateAfterFinalized);
+    assert!(!auction.finalized, EAlreadyFinalized);
+
+    let mut raffle_winners: vector<address> = vector[];
+    let mut generator = r.new_generator(ctx);
+    let max = auction.winners.length() as u32;
+    let mut n = 1;
+    while (n <=num_winners) {
+        let rnd = generator.generate_u32_in_range(1, max);
+        let winner = auction.winners[rnd as u64];
+        if (!raffle_winners.contains(&winner)) {
+            raffle_winners.push_back(winner);
+            n = n +1;
+        }
+    };
+
+    emit(RaffleResultEvent {
+        auction_id: auction.id.to_inner(),
+        winners: raffle_winners,
+    });
+}
+
+public fun reset_status(admin_cap: &AdminCap, auction: &mut Auction) {
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
+    assert!(!auction.finalized, EAlreadyFinalized);
+
     auction.winners = vector::empty();
 }
 
@@ -287,7 +321,7 @@ public fun end_ms(auction: &Auction): u64 {
     auction.end_ms
 }
 
-public fun size(auction: &Auction): u64 {
+public fun size(auction: &Auction): u32 {
     auction.size
 }
 
