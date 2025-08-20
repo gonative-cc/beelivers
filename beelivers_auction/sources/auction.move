@@ -272,7 +272,7 @@ public entry fun run_raffle(
     let mut generator = r.new_generator(ctx);
     let mut n = 1;
     while (n <=num_winners) {
-        let rnd = generator.generate_u32_in_range(1, max);
+        let rnd = generator.generate_u32_in_range(0, max-1);
         let winner = auction.winners[rnd as u64];
         if (!raffle_winners.contains(&winner)) {
             raffle_winners.push_back(winner);
