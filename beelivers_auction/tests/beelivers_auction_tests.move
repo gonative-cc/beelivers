@@ -74,6 +74,13 @@ fun final(
         scenario.return_to_sender(admin_cap);
         sui::test_utils::destroy(clock);
     };
+    scenario.next_tx(admin);
+    {
+	let coin: Coin<SUI> = scenario.take_from_address(admin);
+	assert_eq!(coin.value(), clean_price * winners.length());
+	scenario.return_to_sender(coin);
+    };
+
     scenario
 }
 
