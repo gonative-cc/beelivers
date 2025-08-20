@@ -13,7 +13,8 @@ use beelivers_auction::auction::{
     AdminCap,
     ENoBidFound,
     ENotFinalized,
-    EEnded
+    EEnded,
+    ENotAdmin
 };
 use std::unit_test::{assert_eq, assert_ref_eq};
 use sui::clock::create_for_testing;
@@ -241,5 +242,34 @@ fun bid_when_auction_ended_test() {
         sui::test_utils::destroy(clock);
     };
 
+    abort
+}
+
+
+#[test, expected_failure(abort_code = ENotAdmin)]
+fun should_fails_when_not_admin_finalize_test() {
+    let admin = @0x01;
+    let bidder = vector[@0x100, @0x101, @0x102];
+    let mut scenario = test_scenario::begin(admin);
+    {
+        let clock = create_for_testing(scenario.ctx());
+        let admin_cap = create_admin_cap(scenario.ctx());
+        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
+        transfer::public_transfer(admin_cap, admin);
+
+	let other_admin_cap = create_admin_cap(scenario.ctx());
+        transfer::public_transfer(other_admin_cap, bidder[0]);
+
+        sui::test_utils::destroy(clock);
+    };
+
+    scenario.next_tx(bidder[0]);
+    {
+        let mut clock = create_for_testing(scenario.ctx());
+        clock.set_for_testing(5 * ONE_HOUR);
+        let mut auction: Auction = scenario.take_shared();
+        let admin_cap: AdminCap = scenario.take_from_address(bidder[0]);
+        finalize_end(&admin_cap, &mut auction, 0, scenario.ctx());
+    };
     abort
 }
