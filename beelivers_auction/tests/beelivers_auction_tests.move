@@ -58,7 +58,7 @@ fun final(
         let admin_cap: AdminCap = scenario.take_from_address(admin);
 
         let first_part = vector::tabulate!(winners.length() - 1, |i| winners[i]);
-	let second_part = vector[winners[winners.length() - 1]];
+        let second_part = vector[winners[winners.length() - 1]];
         finalize_start(&admin_cap, &mut auction, first_part, &clock);
         finalize_continue(&admin_cap, &mut auction, second_part, &clock);
         finalize_end(&admin_cap, &mut auction, clean_price, scenario.ctx());
@@ -69,7 +69,7 @@ fun final(
             i = i + 1;
         };
 
-         assert_eq!(auction.clearing_price(), option::some(clean_price));
+        assert_eq!(auction.clearing_price(), option::some(clean_price));
 
         return_shared(auction);
         scenario.return_to_sender(admin_cap);
@@ -77,14 +77,13 @@ fun final(
     };
     scenario.next_tx(admin);
     {
-	let coin: Coin<SUI> = scenario.take_from_address(admin);
-	assert_eq!(coin.value(), clean_price * winners.length());
-	scenario.return_to_sender(coin);
+        let coin: Coin<SUI> = scenario.take_from_address(admin);
+        assert_eq!(coin.value(), clean_price * winners.length());
+        scenario.return_to_sender(coin);
     };
 
     scenario
 }
-
 
 fun withdraw(mut scenario: Scenario, bidder: address, expected_coin: u64): Scenario {
     scenario.next_tx(bidder);
@@ -138,17 +137,16 @@ fun flow_happy_tests() {
     scenario.next_tx(admin);
 
     {
-	let auction: Auction = scenario.take_shared();
+        let auction: Auction = scenario.take_shared();
 
-	assert_eq!(auction.is_finalized(), true);
-	assert_eq!(auction.is_winner(bidder[0]), false);
-	assert_eq!(auction.is_winner(@0x10000), false);
-	assert_eq!(auction.query_total_bid(bidder[0]), option::none());
-	return_shared(auction);
+        assert_eq!(auction.is_finalized(), true);
+        assert_eq!(auction.is_winner(bidder[0]), false);
+        assert_eq!(auction.is_winner(@0x10000), false);
+        assert_eq!(auction.query_total_bid(bidder[0]), option::none());
+        return_shared(auction);
     };
     scenario.end();
 }
-
 
 #[test, expected_failure(abort_code = ENoBidFound)]
 fun withdraw_token_without_premission_tests() {
@@ -170,7 +168,6 @@ fun withdraw_token_without_premission_tests() {
     scenario = bid_with_user(scenario, bidder[2], 5 * ONE_SUI);
 
     scenario = final(scenario, admin, vector[bidder[1], bidder[2]], 2 * ONE_SUI);
-
 
     let invalid_bidder = @0x103;
     scenario.next_tx(invalid_bidder);
@@ -230,7 +227,6 @@ fun withdraw_token_when_not_final_tests() {
     abort
 }
 
-
 #[test, expected_failure(abort_code = EEnded)]
 fun bid_when_auction_ended_test() {
     let admin = @0x01;
@@ -262,7 +258,6 @@ fun bid_when_auction_ended_test() {
     abort
 }
 
-
 #[test, expected_failure(abort_code = ENotAdmin)]
 fun should_fails_when_not_admin_finalize_test() {
     let admin = @0x01;
@@ -274,7 +269,7 @@ fun should_fails_when_not_admin_finalize_test() {
         create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
         transfer::public_transfer(admin_cap, admin);
 
-	let other_admin_cap = create_admin_cap(scenario.ctx());
+        let other_admin_cap = create_admin_cap(scenario.ctx());
         transfer::public_transfer(other_admin_cap, bidder[0]);
 
         sui::test_utils::destroy(clock);

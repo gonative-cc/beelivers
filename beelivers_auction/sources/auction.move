@@ -320,9 +320,9 @@ public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
         sender,
     );
 
-    emit(WithdrawRefundEvent{
-	auction_id: object::id(auction),
-	refund,
+    emit(WithdrawRefundEvent {
+        auction_id: object::id(auction),
+        refund,
     })
     // TODO: event
 }
