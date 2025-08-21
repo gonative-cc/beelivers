@@ -28,7 +28,6 @@ use sui::test_scenario::{Self, return_shared, Scenario, next_tx};
 const ONE_SUI: u64 = 1_000_000_000;
 const ONE_HOUR: u64 = 60 * 60 * 1000;
 
-
 fun setup(admin: address): Scenario {
     let mut scenario = test_scenario::begin(admin);
     {
