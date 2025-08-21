@@ -28,6 +28,21 @@ use sui::test_scenario::{Self, return_shared, Scenario, next_tx};
 const ONE_SUI: u64 = 1_000_000_000;
 const ONE_HOUR: u64 = 60 * 60 * 1000;
 
+
+fun setup(admin: address): Scenario {
+    let mut scenario = test_scenario::begin(admin);
+    {
+        let clock = create_for_testing(scenario.ctx());
+        let admin_cap = create_admin_cap(scenario.ctx());
+
+        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
+
+        transfer::public_transfer(admin_cap, admin);
+        sui::test_utils::destroy(clock);
+    };
+    scenario
+}
+
 fun bid_with_user(mut scenario: Scenario, bidder: address, amount: u64): Scenario {
     next_tx(&mut scenario, bidder);
     {
@@ -108,17 +123,8 @@ fun withdraw(mut scenario: Scenario, bidder: address, expected_coin: u64): Scena
 fun flow_happy_tests() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102, @0x103];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
 
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-
-        transfer::public_transfer(admin_cap, admin);
-        sui::test_utils::destroy(clock);
-    };
-
+    let mut scenario = setup(admin);
     scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
     scenario = bid_with_user(scenario, bidder[1], 2 * ONE_SUI);
     scenario = bid_with_user(scenario, bidder[2], 5 * ONE_SUI);
@@ -152,16 +158,7 @@ fun flow_happy_tests() {
 fun withdraw_token_without_premission_tests() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
-
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-
-        transfer::public_transfer(admin_cap, admin);
-        sui::test_utils::destroy(clock);
-    };
+    let mut scenario = setup(admin);
 
     scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
     scenario = bid_with_user(scenario, bidder[1], 2 * ONE_SUI);
@@ -181,16 +178,7 @@ fun withdraw_token_without_premission_tests() {
 fun withdraw_token_second_time_should_failed_tests() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
-
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-
-        transfer::public_transfer(admin_cap, admin);
-        sui::test_utils::destroy(clock);
-    };
+    let mut scenario = setup(admin);
 
     scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
     scenario = bid_with_user(scenario, bidder[1], 2 * ONE_SUI);
@@ -207,17 +195,7 @@ fun withdraw_token_second_time_should_failed_tests() {
 fun withdraw_token_when_not_final_tests() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
-
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-
-        transfer::public_transfer(admin_cap, admin);
-        sui::test_utils::destroy(clock);
-    };
-
+    let mut scenario = setup(admin);
     scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
     scenario = bid_with_user(scenario, bidder[1], 2 * ONE_SUI);
     scenario = bid_with_user(scenario, bidder[2], 5 * ONE_SUI);
@@ -231,16 +209,7 @@ fun withdraw_token_when_not_final_tests() {
 fun bid_when_auction_ended_test() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
-
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-
-        transfer::public_transfer(admin_cap, admin);
-        sui::test_utils::destroy(clock);
-    };
+    let mut scenario = setup(admin);
 
     next_tx(&mut scenario, bidder[0]);
     {
@@ -262,18 +231,7 @@ fun bid_when_auction_ended_test() {
 fun should_fails_when_not_admin_finalize_test() {
     let admin = @0x01;
     let bidder = vector[@0x100, @0x101, @0x102];
-    let mut scenario = test_scenario::begin(admin);
-    {
-        let clock = create_for_testing(scenario.ctx());
-        let admin_cap = create_admin_cap(scenario.ctx());
-        create(&admin_cap, 2 * ONE_HOUR, 2 * ONE_HOUR, 5810, &clock, scenario.ctx());
-        transfer::public_transfer(admin_cap, admin);
-
-        let other_admin_cap = create_admin_cap(scenario.ctx());
-        transfer::public_transfer(other_admin_cap, bidder[0]);
-
-        sui::test_utils::destroy(clock);
-    };
+    let mut scenario = setup(admin);
 
     scenario.next_tx(bidder[0]);
     {
