@@ -86,11 +86,6 @@ public struct FinalizedEvent has copy, drop {
     clearing_price: u64,
 }
 
-public struct WithdrawRefundEvent has copy, drop {
-    auction_id: ID,
-    refund: u64,
-}
-
 /// Create admin capability
 public fun create_admin_cap(ctx: &mut TxContext): AdminCap {
     AdminCap {
