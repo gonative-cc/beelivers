@@ -1,5 +1,5 @@
 #[allow(lint(public_random))]
-module beelievers::mint {
+module beelievers_mint::mint {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
@@ -14,7 +14,7 @@ module beelievers::mint {
     use sui::kiosk;
     use sui::vec_map::{Self, VecMap};
 
-    use beelievers::auction::{Self, Auction};
+    use beelivers_auction::auction::{Self, Auction};
 
     const TOTAL_SUPPLY: u64 = 6021;
     const MYTHIC_SUPPLY: u64 = 21;
