@@ -14,7 +14,8 @@ use beelivers_auction::auction::{
     ENoBidFound,
     ENotFinalized,
     EEnded,
-    ENotAdmin
+    ENotAdmin,
+    ENotPause,
 };
 use std::unit_test::{assert_eq, assert_ref_eq};
 use sui::clock::create_for_testing;
@@ -237,8 +238,96 @@ fun should_fails_when_not_admin_finalize_test() {
         let mut clock = create_for_testing(scenario.ctx());
         clock.set_for_testing(5 * ONE_HOUR);
         let mut auction: Auction = scenario.take_shared();
-        let admin_cap: AdminCap = scenario.take_from_address(bidder[0]);
+        let admin_cap: AdminCap = create_admin_cap(scenario.ctx());
         finalize_end(&admin_cap, &mut auction, 0, scenario.ctx());
     };
     abort
+}
+
+
+#[test]
+fun emergency_withdraw_test() {
+    let admin = @0x01;
+    let bidder = vector[@0x100];
+    let mut scenario = setup(admin);
+    scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
+
+    scenario.next_tx(admin);
+    {
+        let mut auction: Auction = scenario.take_shared();
+        let admin_cap: AdminCap = scenario.take_from_address(admin);
+	admin_cap.set_paused(&mut auction, true);
+
+	admin_cap.emergency_withdraw(&mut auction, scenario.ctx());
+
+	return_shared(auction);
+	scenario.return_to_sender(admin_cap);
+    };
+
+    scenario.next_tx(admin);
+    {
+	let coin: Coin<SUI> = scenario.take_from_sender();
+	assert_eq!(coin.value(), ONE_SUI);
+	scenario.return_to_sender(coin);
+    };
+
+    scenario.end();
+}
+
+
+#[test,  expected_failure(abort_code = ENotPause)]
+fun emergency_withdraw_not_paused_test() {
+    let admin = @0x01;
+    let bidder = vector[@0x100];
+    let mut scenario = setup(admin);
+    scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
+
+    scenario.next_tx(admin);
+    {
+        let mut auction: Auction = scenario.take_shared();
+        let admin_cap: AdminCap = scenario.take_from_address(admin);
+
+	admin_cap.emergency_withdraw(&mut auction, scenario.ctx());
+
+	return_shared(auction);
+	scenario.return_to_sender(admin_cap);
+    };
+
+    scenario.next_tx(admin);
+    {
+	let coin: Coin<SUI> = scenario.take_from_sender();
+	assert_eq!(coin.value(), ONE_SUI);
+	scenario.return_to_sender(coin);
+    };
+
+    scenario.end();
+}
+
+
+#[test,  expected_failure(abort_code = ENotAdmin)]
+fun emergency_withdraw_not_admin_test() {
+    let admin = @0x01;
+    let bidder = vector[@0x100];
+    let mut scenario = setup(admin);
+    scenario = bid_with_user(scenario, bidder[0], ONE_SUI);
+
+    scenario.next_tx(admin);
+    {
+        let mut auction: Auction = scenario.take_shared();
+        let admin_cap: AdminCap = scenario.take_from_address(admin);
+	admin_cap.set_paused(&mut auction, true);
+	let another_admin_cap = create_admin_cap(scenario.ctx());
+	another_admin_cap.emergency_withdraw(&mut auction, scenario.ctx());
+
+	return_shared(auction);
+	scenario.return_to_sender(admin_cap);
+    };
+
+    scenario.next_tx(admin);
+    {
+	let coin: Coin<SUI> = scenario.take_from_sender();
+	assert_eq!(coin.value(), ONE_SUI);
+	scenario.return_to_sender(coin);
+    };
+    abort;
 }
