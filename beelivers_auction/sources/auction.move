@@ -319,7 +319,6 @@ public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
         coin::from_balance(auction.vault.split(refund), ctx),
         sender,
     );
-    // TODO: event
 }
 
 // ========== View functions ==========
