@@ -7,16 +7,20 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 dotenv.config();
 
 const PACKAGE_ID = "";
-
-const NETWORK = "";
 const START_MS = "";
 const DURATION_MS = "";
 const AUCTION_SIZE = "";
-async function main() {
-	const { MNEMONIC } = process.env;
 
-	if (!MNEMONIC || !PACKAGE_ID || !NETWORK || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
+async function main() {
+	const { MNEMONIC, NETWORK } = process.env;
+
+	if (!MNEMONIC || !PACKAGE_ID  || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
+		process.exit(1);
+	}
+
+	if (!NETWORK) {
+		console.error("❌ Error: SUI_RPC_URL is not set in your .env file.");
 		process.exit(1);
 	}
 
@@ -25,10 +29,6 @@ async function main() {
 	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
 	console.log(`📦 Package ID: ${PACKAGE_ID}`);
-	if (!NETWORK) {
-		console.error("❌ Error: SUI_RPC_URL is not set in your .env file.");
-		process.exit(1);
-	}
 
 	const txn = new Transaction();
 
@@ -43,7 +43,7 @@ async function main() {
 			admin,
 			txn.pure("u64", parseInt(START_MS)),
 			txn.pure("u64", parseInt(DURATION_MS)),
-			txn.pure("u64", parseInt(AUCTION_SIZE)),
+			txn.pure("u32", parseInt(AUCTION_SIZE)),
 			txn.object.clock(),
 		],
 	});
