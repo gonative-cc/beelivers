@@ -51,11 +51,6 @@ async function main() {
 			await finalize(client, keypair, auction_conf);
 		})
 
-	// if (program.args.length != 1) {
-	// 	console.error("❌ Error: Please provide at least one file to process.");
-	// 	process.exit(1);
-	// }
-
 	program.parse(process.argv);
 }
 
