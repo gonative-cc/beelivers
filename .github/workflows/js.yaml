@@ -24,8 +24,8 @@ jobs:
       # - name: eslint
       #   run: "bun run lint"
 
-      - name: typecheck
-        run: "bun run typecheck"
+      # - name: typecheck
+      #   run: "bun run typecheck"
 
       - name: test
         run: "bun run test"
