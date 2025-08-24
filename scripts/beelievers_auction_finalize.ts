@@ -28,6 +28,10 @@ async function main() {
 		process.exit(1);
 	}
 	const file = program.args[0];
+	if (!file) {
+		console.error("❌ Error: Please provide a file to process.");
+		process.exit(1);
+	}
 
 	const { MNEMONIC } = process.env;
 
@@ -97,9 +101,18 @@ export function batchAddresses(addresses: string[], slot: number): string[][] {
 async function createPTB(client: SuiClient, keypair: Ed25519Keypair, addresses: string[][]) {
 	let number_txn = addresses.length;
 
-	await start(client, keypair, addresses[0]);
+	const firstBatch = addresses[0];
+	if (!firstBatch) {
+		throw new Error("No addresses to process");
+	}
+	
+	await start(client, keypair, firstBatch);
 	for (let i = 1; i < number_txn; i++) {
-		await next(client, keypair, addresses[i]);
+		const batch = addresses[i];
+		if (!batch) {
+			throw new Error(`Batch ${i} is undefined`);
+		}
+		await next(client, keypair, batch);
 	}
 
 	await finalize(client, keypair);
@@ -187,6 +200,8 @@ async function finalize(client: SuiClient, keypair: Ed25519Keypair) {
 	}
 }
 
-main().catch((error) => {
-	console.error("A fatal error occurred in the main function:", error);
-});
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("A fatal error occurred in the main function:", error);
+	});
+}

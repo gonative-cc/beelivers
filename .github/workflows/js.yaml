@@ -22,10 +22,10 @@ jobs:
       - run: bun install
 
       # - name: eslint
-      #   run: "pnpm run lint"
+      #   run: "bun run lint"
 
-      # - name: typecheck
-      #   run: "pnpm run typecheck"
+      - name: typecheck
+        run: "bun run typecheck"
 
-      # - name: test
-      #   run: "pnpm run test"
+      - name: test
+        run: "bun run test"
