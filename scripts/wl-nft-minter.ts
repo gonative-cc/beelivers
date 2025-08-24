@@ -9,8 +9,6 @@ import * as path from "path";
 
 import { writeToFile } from "./fileio.js";
 
-dotenv.config();
-
 type ReportStatus =
 	| "Pending"
 	| "Success"
@@ -176,6 +174,8 @@ function addMintCallToTransaction(tx: Transaction, batch: string[]) {
 //
 // START
 //
+
+dotenv.config();
 
 main().catch((error) => {
 	console.error("A fatal error occurred in the main function:", error);

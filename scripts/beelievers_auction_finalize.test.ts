@@ -1,4 +1,5 @@
-import { expect, test, describe } from "vitest";
+import { test, expect, describe } from "bun:test";
+
 import { batchAddresses, preprocessAddresses } from "./beelievers_auction_finalize.js";
 
 describe("preprocess Address | sort and validate address", () => {

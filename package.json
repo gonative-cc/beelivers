@@ -1,16 +1,13 @@
 {
   "name": "beelievers-nft",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "module": "index.ts",
   "type": "module",
-  "packageManager": "pnpm@10.14.0",
+  "private": true,
+  "description": "",
   "scripts": {
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -b",
-    "build:watch": "tsc -b -w",
-    "test": "vitest"
+    "test": "bun test"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +23,9 @@
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.2.1",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }

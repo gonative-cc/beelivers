@@ -2,6 +2,11 @@
 
 Beelivers BTCFi activation and NFT auction
 
+## Requirements
+
+- Sui >= v1.52
+- [Bun](https://bun.com/) >= 1.2 -- NOTE: we use bun rather than Node.js
+
 ## Deployed objects & packages
 
 ## Contributing
