@@ -243,7 +243,8 @@ public fun finalize_end(
     let len = auction.winners.length();
     assert!(0 < len && len <= auction.size as u64, EWrongWinnersSize);
 
-    let funds = auction.clearing_price * len;
+    // due to boosting, we need to consider bad debt, and take it into account.
+    let funds = auction.clearing_price * len - 18 * 1_000_000_000;
     transfer::public_transfer(
         coin::from_balance(auction.vault.split(funds), ctx),
         ctx.sender(),
