@@ -12,7 +12,6 @@ const MAX_ADDRESSES_PER_VECTOR = 500;
 
 dotenv.config();
 
-
 async function main() {
 	const program = new Command();
 
@@ -23,11 +22,14 @@ async function main() {
 		process.exit(1);
 	}
 
-	const rpcUrl = getFullnodeUrl(auction_conf.network as "mainnet" | "testnet" | "devnet" | "localnet");
+	const rpcUrl = getFullnodeUrl(
+		auction_conf.network as "mainnet" | "testnet" | "devnet" | "localnet",
+	);
 	const client = new SuiClient({ url: rpcUrl });
 	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
-	program.command("set-winner")
+	program
+		.command("set-winner")
 		.argument("<file...>", "A finalized addresses file")
 		.action(async (options) => {
 			const file = options[0];
@@ -46,10 +48,9 @@ async function main() {
 			}
 		});
 
-	program.command("finalize")
-		.action(async () => {
-			await finalize(client, keypair, auction_conf);
-		})
+	program.command("finalize").action(async () => {
+		await finalize(client, keypair, auction_conf);
+	});
 
 	program.parse(process.argv);
 }
@@ -87,7 +88,12 @@ export function batchAddresses(addresses: string[], slot: number): string[][] {
 	return _.chunk(addresses, slot);
 }
 
-async function set_winner(client: SuiClient, keypair: Ed25519Keypair, acof: Auction, addresses: string[][]) {
+async function set_winner(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acof: Auction,
+	addresses: string[][],
+) {
 	let number_txn = addresses.length;
 
 	await start(client, keypair, acof, addresses[0]);
@@ -96,7 +102,12 @@ async function set_winner(client: SuiClient, keypair: Ed25519Keypair, acof: Auct
 	}
 }
 
-async function start(client: SuiClient, keypair: Ed25519Keypair, acof: Auction, addresses: string[]) {
+async function start(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acof: Auction,
+	addresses: string[],
+) {
 	let txn = new Transaction();
 
 	let auction = txn.object(acof.auction_id);
@@ -122,9 +133,13 @@ async function start(client: SuiClient, keypair: Ed25519Keypair, acof: Auction, 
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-async function next(client: SuiClient, keypair: Ed25519Keypair, acof: Auction, addresses: string[]) {
+async function next(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acof: Auction,
+	addresses: string[],
+) {
 	let txn = new Transaction();
-
 
 	let auction = txn.object(acof.auction_id);
 	let admin_cap = txn.object(acof.admin_cap_id);
@@ -150,7 +165,6 @@ async function next(client: SuiClient, keypair: Ed25519Keypair, acof: Auction, a
 	}
 }
 
-
 async function finalize(client: SuiClient, keypair: Ed25519Keypair, acof: Auction) {
 	let txn = new Transaction();
 
@@ -158,7 +172,7 @@ async function finalize(client: SuiClient, keypair: Ed25519Keypair, acof: Auctio
 	let admin_cap = txn.object(acof.admin_cap_id);
 
 	if (acof.clearing_price < 1e9) {
-		throw new Error("Invalid clearing price")
+		throw new Error("Invalid clearing price");
 	}
 
 	txn.moveCall({
@@ -182,8 +196,6 @@ async function finalize(client: SuiClient, keypair: Ed25519Keypair, acof: Auctio
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-
-
 
 main().catch((error) => {
 	console.error("A fatal error occurred in the main function:", error);

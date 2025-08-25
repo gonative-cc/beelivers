@@ -14,7 +14,7 @@ const AUCTION_SIZE = "";
 async function main() {
 	const { MNEMONIC, NETWORK } = process.env;
 
-	if (!MNEMONIC || !PACKAGE_ID  || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
+	if (!MNEMONIC || !PACKAGE_ID || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
 		process.exit(1);
 	}
