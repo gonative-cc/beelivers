@@ -3,9 +3,9 @@ export type AuctionConf = {
 	auctionId: string;
 	adminCapId: string;
 	clearingPrice: number;
-	startMs: number,
-	durationMs: number,
-	auctionSize: number,
+	startMs: number;
+	durationMs: number;
+	auctionSize: number;
 	network: string;
 };
 
@@ -17,9 +17,8 @@ export const auctionConfMainnet: AuctionConf = {
 	network: "mainnet",
 	startMs: 0,
 	durationMs: 0,
-	auctionSize: 5810
+	auctionSize: 5810,
 };
-
 
 export const auctionConfTestnet: AuctionConf = {
 	packageId: "",
@@ -29,5 +28,5 @@ export const auctionConfTestnet: AuctionConf = {
 	network: "testnet",
 	startMs: 0,
 	durationMs: 0,
-	auctionSize: 0
-}
+	auctionSize: 0,
+};

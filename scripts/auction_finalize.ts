@@ -18,7 +18,7 @@ async function main() {
 
 	const { MNEMONIC, NETWORK } = process.env;
 
-	const auctionCfg =  (NETWORK == "mainnet") ? auctionConfMainnet: auctionConfTestnet;
+	const auctionCfg = NETWORK == "mainnet" ? auctionConfMainnet : auctionConfTestnet;
 
 	if (!MNEMONIC) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");

@@ -7,7 +7,6 @@ import { auctionConfMainnet, auctionConfTestnet } from "./auction.config.js";
 
 dotenv.config();
 
-
 async function main() {
 	const { MNEMONIC, NETWORK } = process.env;
 
@@ -21,7 +20,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const auctionCfg = (NETWORK == "mainnet") ? auctionConfMainnet : auctionConfTestnet;
+	const auctionCfg = NETWORK == "mainnet" ? auctionConfMainnet : auctionConfTestnet;
 
 	const rpcUrl = getFullnodeUrl(NETWORK as "mainnet" | "testnet" | "devnet" | "localnet");
 	const client = new SuiClient({ url: rpcUrl });
