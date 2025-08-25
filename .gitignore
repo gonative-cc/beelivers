@@ -78,3 +78,5 @@ contrib/scripts/*.json
 *.log
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+private-*
