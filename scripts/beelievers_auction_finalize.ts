@@ -6,7 +6,7 @@ import { Command } from "commander";
 import _ from "lodash";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { auction_conf, type Auction } from "./auction.config.js";
+import { auctionConfMainnet, auctionConfTestnet, type AuctionConf } from "./auction.config.js";
 
 const MAX_ADDRESSES_PER_VECTOR = 500;
 
@@ -15,7 +15,9 @@ dotenv.config();
 async function main() {
 	const program = new Command();
 
-	const { MNEMONIC } = process.env;
+	const { MNEMONIC, NETWORK } = process.env;
+
+	const auctionCfg =  (NETWORK == "mainnet") ? auctionConfMainnet: auctionConfTestnet;
 
 	if (!MNEMONIC) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
@@ -23,8 +25,9 @@ async function main() {
 	}
 
 	const rpcUrl = getFullnodeUrl(
-		auction_conf.network as "mainnet" | "testnet" | "devnet" | "localnet",
+		auctionCfg.network as "mainnet" | "testnet" | "devnet" | "localnet",
 	);
+
 	const client = new SuiClient({ url: rpcUrl });
 	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
@@ -33,7 +36,7 @@ async function main() {
 		.argument("<file...>", "A finalized addresses file")
 		.action(async (options) => {
 			const file = options[0];
-			console.log(`📦 Package ID: ${auction_conf.package_id}`);
+			console.log(`📦 Package ID: ${auctionCfg.package_id}`);
 			console.log("---");
 			try {
 				let addresses = await readAddressesFromFile(file);
@@ -41,7 +44,7 @@ async function main() {
 				let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
 
 				console.log(bAddreses);
-				await set_winner(client, keypair, auction_conf, bAddreses);
+				await set_winner(client, keypair, auctionCfg, bAddreses);
 			} catch (err) {
 				console.error("❌ Error: ", err);
 				process.exit(1);
@@ -49,7 +52,7 @@ async function main() {
 		});
 
 	program.command("finalize").action(async () => {
-		await finalize(client, keypair, auction_conf);
+		await finalizeEnd(client, keypair, auctionCfg);
 	});
 
 	program.parse(process.argv);
@@ -91,29 +94,29 @@ export function batchAddresses(addresses: string[], slot: number): string[][] {
 async function set_winner(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
-	acfg: Auction,
+	acfg: AuctionConf,
 	winners: string[][],
 ) {
-	let number_txn = addresses.length;
+	let number_txn = winners.length;
 
-	await start(client, keypair, acof, addresses[0]);
+	await finalizeStart(client, keypair, acfg, winners[0]);
 	for (let i = 1; i < number_txn; i++) {
-		await next(client, keypair, acof, addresses[i]);
+		await finalizeNext(client, keypair, acfg, winners[i]);
 	}
 }
 
 async function finalizeStart(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
-	acof: Auction,
+	acfg: AuctionConf,
 	addresses: string[],
 ) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acof.auction_id);
-	let admin_cap = txn.object(acof.admin_cap_id);
+	let auction = txn.object(acfg.auction_id);
+	let admin_cap = txn.object(acfg.admin_cap_id);
 	txn.moveCall({
-		target: `${acof.package_id}::auction::finalize_start`,
+		target: `${acfg.package_id}::auction::finalize_start`,
 		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
@@ -136,16 +139,16 @@ async function finalizeStart(
 async function finalizeNext(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
-	acof: Auction,
+	acfg: AuctionConf,
 	addresses: string[],
 ) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acof.auction_id);
-	let admin_cap = txn.object(acof.admin_cap_id);
+	let auction = txn.object(acfg.auction_id);
+	let admin_cap = txn.object(acfg.admin_cap_id);
 
 	txn.moveCall({
-		target: `${acof.package_id}::auction::finalize_continue`,
+		target: `${acfg.package_id}::auction::finalize_continue`,
 		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
@@ -165,19 +168,19 @@ async function finalizeNext(
 	}
 }
 
-async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acof: Auction) {
+async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: AuctionConf) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acof.auction_id);
-	let admin_cap = txn.object(acof.admin_cap_id);
+	let auction = txn.object(acfg.auction_id);
+	let admin_cap = txn.object(acfg.admin_cap_id);
 
-	if (acof.clearing_price < 1e9) {
+	if (acfg.clearing_price < 1e9) {
 		throw new Error("Invalid clearing price");
 	}
 
 	txn.moveCall({
-		target: `${acof.package_id}::auction::finalize_end`,
-		arguments: [admin_cap, auction, txn.pure("u64", acof.clearing_price)],
+		target: `${acfg.package_id}::auction::finalize_end`,
+		arguments: [admin_cap, auction, txn.pure("u64", acfg.clearing_price)],
 	});
 
 	const result = await client.signAndExecuteTransaction({
