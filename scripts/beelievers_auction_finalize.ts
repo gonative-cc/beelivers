@@ -91,8 +91,8 @@ export function batchAddresses(addresses: string[], slot: number): string[][] {
 async function set_winner(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
-	acof: Auction,
-	addresses: string[][],
+	acfg: Auction,
+	winners: string[][],
 ) {
 	let number_txn = addresses.length;
 
@@ -102,7 +102,7 @@ async function set_winner(
 	}
 }
 
-async function start(
+async function finalizeStart(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
 	acof: Auction,
@@ -133,7 +133,7 @@ async function start(
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-async function next(
+async function finalizeNext(
 	client: SuiClient,
 	keypair: Ed25519Keypair,
 	acof: Auction,
@@ -165,7 +165,7 @@ async function next(
 	}
 }
 
-async function finalize(client: SuiClient, keypair: Ed25519Keypair, acof: Auction) {
+async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acof: Auction) {
 	let txn = new Transaction();
 
 	let auction = txn.object(acof.auction_id);
