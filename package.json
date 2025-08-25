@@ -19,13 +19,12 @@
     "commander": "^14.0.0",
     "csv-parse": "^6.1.0",
     "dotenv": "^17.2.1",
-    "lodash": "^4.17.21"
+    "redash": "^0.23.0"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.20",
+    "@types/bun": "latest",
     "@types/node": "^24.2.1",
-    "typescript": "^5.9.2",
-    "@types/bun": "latest"
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
     "typescript": "^5"
