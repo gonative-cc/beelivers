@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #5",
+  "description": "A rare mythical Beeliever: robot",
+  "image": "5.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "robot"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "5.png"
+      }
+    ],
+    "category": "image"
+  }
+}

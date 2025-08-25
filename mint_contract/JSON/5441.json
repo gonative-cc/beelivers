@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #5441",
+  "description": "A unique Beeliever from the Sending Love family",
+  "image": "5441.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Sending Love"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Closed"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Music Headphones"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Native Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "5441.png"
+      }
+    ],
+    "category": "image"
+  }
+}

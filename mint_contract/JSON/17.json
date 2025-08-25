@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #17",
+  "description": "A rare mythical Beeliever: creeper",
+  "image": "17.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "creeper"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "17.png"
+      }
+    ],
+    "category": "image"
+  }
+}

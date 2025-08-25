@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #3708",
+  "description": "A unique Beeliever from the Smurf family",
+  "image": "3708.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Smurf"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Woman Full"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "None"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Cap"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Red"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "3708.png"
+      }
+    ],
+    "category": "image"
+  }
+}

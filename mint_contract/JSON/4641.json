@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #4641",
+  "description": "A unique Beeliever from the Bitcoin Antenas family",
+  "image": "4641.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Bitcoin Antenas"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Angry"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Hair"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Bitcoin Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Green"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "4641.png"
+      }
+    ],
+    "category": "image"
+  }
+}

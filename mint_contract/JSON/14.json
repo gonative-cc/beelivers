@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #14",
+  "description": "A rare mythical Beeliever: nativ super",
+  "image": "14.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "nativ super"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "14.png"
+      }
+    ],
+    "category": "image"
+  }
+}

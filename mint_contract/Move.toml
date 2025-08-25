@@ -1,0 +1,20 @@
+[package]
+name = "beelievers_mint"
+version = "0.0.1"
+edition = "2024.beta" 
+authors = ["@null"]  
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+beelivers_auction = { local = "../beelivers_auction" }
+
+[addresses]
+beelievers_mint = "0x0"
+beelivers_auction = "0x0"
+
+[dev-dependencies]
+
+
+[dev-addresses]
+
+
