@@ -10,3 +10,5 @@ worker-configuration.d.ts
 pnpm-workspace.yaml
 
 private*
+
+mint/JSON
