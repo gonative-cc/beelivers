@@ -50,11 +50,11 @@ describe("batchAddresses tests", () => {
 			],
 			["0x1000000000000000000000000000000000000000000000000000000000000000"],
 		]);
+
+		// empty
+		expect(batchAddresses([], 10)).toStrictEqual([])
 	});
 
-	test("batchAddresses failed case", () => {
-		expect(() => batchAddresses([], 10)).toThrow("list address is empty");
-	});
 
 	test("batch single addresses", () => {
 		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
