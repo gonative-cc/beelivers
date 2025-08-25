@@ -6,7 +6,6 @@ use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event::emit;
-use sui::random::Random;
 use sui::sui::SUI;
 use sui::table::{Self, Table};
 
@@ -32,8 +31,6 @@ const EBidZeroSui: u64 = 12;
 const ENotAdmin: u64 = 13;
 const EInsufficientBidForWinner: u64 = 14;
 const EPaused: u64 = 15;
-const ERaffleTooBig: u64 = 16;
-const ERaffleAlreadyDone: u64 = 17;
 
 // ========== Structs ==========
 
@@ -47,7 +44,7 @@ public struct Auction has key, store {
     admin_cap_id: ID,
     paused: bool,
     /// number of items to bid
-    size: u32,
+    size: u64,
     /// auction start time in ms, inclusive
     start_ms: u64,
     /// auction end time in ms, exclusive
@@ -60,27 +57,14 @@ public struct Auction has key, store {
     /// The price winning bidders are going to pay
     clearing_price: u64,
     finalized: bool,
-    raffle_done: bool,
-}
-
-public struct AuctionCreateEvent has copy, drop {
-    auction_id: ID,
-    admin_cap_id: ID,
 }
 
 public struct BidEvent has copy, drop {
-    auction_id: ID,
-    /// bidder (tx sender) total (aggregated) bid amount
+    bidder: address,
     total_bid_amount: u64,
 }
 
-public struct RaffleResultEvent has copy, drop {
-    auction_id: ID,
-    winners: vector<address>,
-}
-
 public struct FinalizedEvent has copy, drop {
-    auction_id: ID,
     /// funds from the auction transferred to the admin.
     funds: u64,
     clearing_price: u64,
@@ -93,39 +77,19 @@ public fun create_admin_cap(ctx: &mut TxContext): AdminCap {
     }
 }
 
-#[allow(lint(share_owned))]
 /// creates a new Auction (shared object) and associate it with the provided AdminCap.
 public fun create(
     admin_cap: &AdminCap,
     start_ms: u64,
     duration_ms: u64,
-    size: u32,
+    size: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let auction = create_(admin_cap, start_ms, duration_ms, size, clock, ctx);
-
-    emit(AuctionCreateEvent {
-        auction_id: object::id(&auction),
-        admin_cap_id: object::id(admin_cap),
-    });
-
-    transfer::public_share_object(auction)
-}
-
-// helper function to be used with tests
-public(package) fun create_(
-    admin_cap: &AdminCap,
-    start_ms: u64,
-    duration_ms: u64,
-    size: u32,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): Auction {
     // must start at least 1h in the future
     assert!(start_ms >= clock.timestamp_ms() + ONE_HOUR, EStartTimeNotInFuture);
     assert!(duration_ms >= ONE_HOUR, EDurationTooShort);
-    Auction {
+    let auction = Auction {
         id: object::new(ctx),
         admin_cap_id: object::id(admin_cap),
         paused: false,
@@ -137,8 +101,9 @@ public(package) fun create_(
         winners: vector::empty(),
         clearing_price: 0,
         finalized: false,
-        raffle_done: false,
-    }
+    };
+
+    transfer::public_share_object(auction)
 }
 
 fun assert_is_active(auction: &Auction, clock: &Clock) {
@@ -176,7 +141,7 @@ public fun bid(
     };
 
     emit(BidEvent {
-        auction_id: auction.id.to_inner(),
+        bidder,
         total_bid_amount: total,
     });
 
@@ -188,110 +153,37 @@ public fun set_paused(admin_cap: &AdminCap, auction: &mut Auction, pause: bool) 
     auction.paused = pause;
 }
 
-// NOTE: we can't finalize in a single transaction. Sui tx can only can have 16kb size parameter
-// or 500 addresses.
-// https://move-book.com/guides/building-against-limits#single-pure-argument-size
-/// Finalizes the auction. Must be chained with finalize_continue* and finalize_end to finish the
-/// process.
-public fun finalize_start(
+/// Finalizes the auction
+public entry fun finalize(
     admin_cap: &AdminCap,
     auction: &mut Auction,
+    // TODO: // we can't do this with 5000+ addresses. sui only can do 16kb size parameter or 500 addresses , https://move-book.com/guides/building-against-limits#single-pure-argument-size. We need to double check PTB can help us in this case or not.
     winners: vector<address>,
-    clock: &Clock,
-) {
-    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EAlreadyFinalized);
-    assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
-    assert!(is_sorted(&winners), EWinnersNotSorted);
-    auction.winners = winners;
-}
-
-public fun finalize_continue(
-    admin_cap: &AdminCap,
-    auction: &mut Auction,
-    winners: vector<address>,
-    clock: &Clock,
-) {
-    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(is_sorted(&winners), EWinnersNotSorted);
-    assert!(!auction.finalized, EAlreadyFinalized);
-    assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
-    let len = auction.winners.length();
-    assert!(auction.winners[len-1].to_u256() < winners[0].to_u256(), EWinnersNotSorted);
-    auction.winners.append(winners);
-}
-
-#[allow(lint(self_transfer))]
-public fun finalize_end(
-    admin_cap: &AdminCap,
-    auction: &mut Auction,
     clearing_price: u64,
+    clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     assert!(!auction.finalized, EAlreadyFinalized);
+    assert!(auction.end_ms <= clock.timestamp_ms(), ENotEnded);
+    let len = winners.length();
+    assert!(0 < len && len <= auction.size, EWrongWinnersSize);
+    assert!(is_sorted(&winners), EWinnersNotSorted);
 
-    // update status of auction
     auction.finalized = true;
     auction.clearing_price = clearing_price;
+    auction.winners = winners;
 
-    let len = auction.winners.length();
-    assert!(0 < len && len <= auction.size as u64, EWrongWinnersSize);
-
-    let funds = auction.clearing_price * len;
+    let funds = clearing_price * len;
     transfer::public_transfer(
         coin::from_balance(auction.vault.split(funds), ctx),
         ctx.sender(),
     );
 
     emit(FinalizedEvent {
-        auction_id: auction.id.to_inner(),
         funds,
-        clearing_price: auction.clearing_price,
+        clearing_price,
     });
-}
-
-#[allow(lint(public_random))]
-/// returns the raffle winners
-public entry fun run_raffle(
-    auction: &mut Auction,
-    admin_cap: &AdminCap,
-    num_winners: u32,
-    r: &Random,
-    ctx: &mut TxContext,
-): vector<address> {
-    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EAlreadyFinalized);
-    assert!(!auction.raffle_done, ERaffleAlreadyDone);
-    auction.raffle_done = true;
-
-    let max = auction.winners.length() as u32;
-    assert!(num_winners <= max / 2, ERaffleTooBig);
-
-    let mut raffle_winners: vector<address> = vector[];
-    let mut generator = r.new_generator(ctx);
-    let mut n = 1;
-    while (n <= num_winners) {
-        let rnd = generator.generate_u32_in_range(0, max-1);
-        let winner = auction.winners[rnd as u64];
-        if (!raffle_winners.contains(&winner)) {
-            raffle_winners.push_back(winner);
-            n = n + 1;
-        }
-    };
-
-    emit(RaffleResultEvent {
-        auction_id: auction.id.to_inner(),
-        winners: raffle_winners,
-    });
-    raffle_winners
-}
-
-public fun reset_status(admin_cap: &AdminCap, auction: &mut Auction) {
-    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EAlreadyFinalized);
-
-    auction.winners = vector::empty();
 }
 
 /// Allows any user to withdraw their funds after the auction is finalized.
@@ -330,7 +222,7 @@ public fun end_ms(auction: &Auction): u64 {
     auction.end_ms
 }
 
-public fun size(auction: &Auction): u32 {
+public fun size(auction: &Auction): u64 {
     auction.size
 }
 
@@ -456,6 +348,23 @@ fun test_bisect_address() {
 }
 
 #[test_only]
-public(package) fun set_winners(a: &mut Auction, winners: vector<address>) {
-    a.winners = winners;
+fun dummy_tx(sender: address, time_ms: u64): TxContext {
+    tx_context::new_from_hint(sender, 1, 1, time_ms, 0)
+}
+
+#[test_only]
+use sui::clock;
+
+#[test]
+fun test_create_auction_valid() {
+    let mut ctx = dummy_tx(@0x1, 1);
+    let mut c = clock::create_for_testing(&mut ctx);
+    let admin_cap = create_admin_cap(&mut ctx);
+    create(&admin_cap, 1000+ONE_HOUR, ONE_HOUR, 5, &c, &mut ctx);
+    c.destroy_for_testing();
+    let AdminCap { id } = admin_cap;
+    id.delete();
+    // object::delete(admin_cap.id);
+    // assert!(a == 3700);
+    // assert!(a.end_time == 7300, 0);
 }
