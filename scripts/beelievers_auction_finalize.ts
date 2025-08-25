@@ -3,7 +3,7 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 import * as dotenv from "dotenv";
 import { promises as fs } from "fs";
 import { Command } from "commander";
-import _ from "lodash";
+import { chunk } from "radash";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
@@ -91,28 +91,19 @@ export function preprocessAddresses(addresses: string[]): string[] {
 }
 
 export function batchAddresses(addresses: string[], slot: number): string[][] {
-	// split addresses to chuck
 	if (addresses.length == 0) {
-		throw new Error("list address is empty");
+		return [];
 	}
-	return _.chunk(addresses, slot);
+	return chunk(addresses, slot);
 }
 
-async function createPTB(client: SuiClient, keypair: Ed25519Keypair, addresses: string[][]) {
-	let number_txn = addresses.length;
+async function createPTB(client: SuiClient, keypair: Ed25519Keypair, winners: string[][]) {
+	let number_txn = winners.length;
+	if (winners.length === 0) throw Error("winners not selected");
 
-	const firstBatch = addresses[0];
-	if (!firstBatch) {
-		throw new Error("No addresses to process");
-	}
-	
-	await start(client, keypair, firstBatch);
+	await start(client, keypair, winners[0]!);
 	for (let i = 1; i < number_txn; i++) {
-		const batch = addresses[i];
-		if (!batch) {
-			throw new Error(`Batch ${i} is undefined`);
-		}
-		await next(client, keypair, batch);
+		await next(client, keypair, winners[i]!);
 	}
 
 	await finalize(client, keypair);
