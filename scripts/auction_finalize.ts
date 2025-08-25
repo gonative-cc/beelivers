@@ -5,6 +5,7 @@ import { promises as fs } from "fs";
 import { Command } from "commander";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { auctionConfMainnet, auctionConfTestnet, type AuctionConf } from "./auction.config.js";
 
 import { chunk } from "./utils";
 
@@ -12,58 +13,50 @@ const MAX_ADDRESSES_PER_VECTOR = 500;
 
 dotenv.config();
 
-const PACKAGE_ID = "";
-const PUBLISHER_ID = "";
-const NETWORK = "";
-const ADMIN_CAP_ID = "";
-const AUCTION_ID = "";
-const CLEAR_PRICE = "";
 async function main() {
 	const program = new Command();
-	program.argument("<file...>", "A finalized addresses file");
 
-	program.parse(process.argv);
+	const { MNEMONIC, NETWORK } = process.env;
 
-	if (program.args.length != 1) {
-		console.error("❌ Error: Please provide at least one file to process.");
-		process.exit(1);
-	}
-	const file = program.args[0];
-	if (!file) {
-		console.error("❌ Error: Please provide a file to process.");
-		process.exit(1);
-	}
+	const auctionCfg = NETWORK == "mainnet" ? auctionConfMainnet : auctionConfTestnet;
 
-	const { MNEMONIC } = process.env;
-
-	if (!MNEMONIC || !PACKAGE_ID || !NETWORK || !ADMIN_CAP_ID || !AUCTION_ID || !CLEAR_PRICE) {
+	if (!MNEMONIC) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
 		process.exit(1);
 	}
 
-	const rpcUrl = getFullnodeUrl(NETWORK as "mainnet" | "testnet" | "devnet" | "localnet");
+	const rpcUrl = getFullnodeUrl(
+		auctionCfg.network as "mainnet" | "testnet" | "devnet" | "localnet",
+	);
+
 	const client = new SuiClient({ url: rpcUrl });
 	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
-	console.log(`📦 Package ID: ${PACKAGE_ID}`);
-	console.log(`👨‍⚖️ Publisher ID: ${PUBLISHER_ID}`);
-	console.log("---");
-	if (!NETWORK) {
-		console.error("❌ Error: SUI_RPC_URL is not set in your .env file.");
-		process.exit(1);
-	}
+	program
+		.command("set-winner")
+		.argument("<file...>", "A finalized addresses file")
+		.action(async (options) => {
+			const file = options[0];
+			console.log(`📦 Package ID: ${auctionCfg.packageId}`);
+			console.log("---");
+			try {
+				let addresses = await readAddressesFromFile(file);
+				addresses = preprocessAddresses(addresses);
+				let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
 
-	try {
-		let addresses = await readAddressesFromFile(file);
-		addresses = preprocessAddresses(addresses);
-		let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
+				console.log(bAddreses);
+				await set_winner(client, keypair, auctionCfg, bAddreses);
+			} catch (err) {
+				console.error("❌ Error: ", err);
+				process.exit(1);
+			}
+		});
 
-		console.log(bAddreses);
-		await createPTB(client, keypair, bAddreses);
-	} catch (err) {
-		console.error("❌ Error: ", err);
-		process.exit(1);
-	}
+	program.command("finalize").action(async () => {
+		await finalizeEnd(client, keypair, auctionCfg);
+	});
+
+	program.parse(process.argv);
 }
 
 export async function readAddressesFromFile(filePath: string): Promise<string[]> {
@@ -98,30 +91,33 @@ export function batchAddresses(addresses: string[], slot: number): string[][] {
 	return chunk(addresses, slot);
 }
 
-async function createPTB(client: SuiClient, keypair: Ed25519Keypair, winners: string[][]) {
+async function set_winner(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acfg: AuctionConf,
+	winners: string[][],
+) {
 	let number_txn = winners.length;
-	if (winners.length === 0) throw Error("winners not selected");
 
-	await start(client, keypair, winners[0]!);
+	await finalizeStart(client, keypair, acfg, winners[0]!);
 	for (let i = 1; i < number_txn; i++) {
-		await next(client, keypair, winners[i]!);
+		await finalizeNext(client, keypair, acfg, winners[i]!);
 	}
-
-	await finalize(client, keypair);
 }
 
-//
-// START
-//
-
-async function start(client: SuiClient, keypair: Ed25519Keypair, addresses: string[]) {
+async function finalizeStart(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acfg: AuctionConf,
+	addresses: string[],
+) {
 	let txn = new Transaction();
 
-	let auction = txn.object(AUCTION_ID as string);
-	let admin_cap = txn.object(ADMIN_CAP_ID as string);
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
 	txn.moveCall({
-		target: `${PACKAGE_ID}::auction::finalize_start`,
-		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
+		target: `${acfg.packageId}::auction::finalize_start`,
+		arguments: [adminCap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
 	const result = await client.signAndExecuteTransaction({
@@ -140,14 +136,20 @@ async function start(client: SuiClient, keypair: Ed25519Keypair, addresses: stri
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
 }
-async function next(client: SuiClient, keypair: Ed25519Keypair, addresses: string[]) {
+async function finalizeNext(
+	client: SuiClient,
+	keypair: Ed25519Keypair,
+	acfg: AuctionConf,
+	addresses: string[],
+) {
 	let txn = new Transaction();
 
-	let auction = txn.object(AUCTION_ID as string);
-	let admin_cap = txn.object(ADMIN_CAP_ID as string);
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
+
 	txn.moveCall({
-		target: `${PACKAGE_ID}::auction::finalize_continue`,
-		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
+		target: `${acfg.packageId}::auction::finalize_continue`,
+		arguments: [adminCap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
 	const result = await client.signAndExecuteTransaction({
@@ -166,13 +168,19 @@ async function next(client: SuiClient, keypair: Ed25519Keypair, addresses: strin
 	}
 }
 
-async function finalize(client: SuiClient, keypair: Ed25519Keypair) {
+async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: AuctionConf) {
 	let txn = new Transaction();
-	let auction = txn.object(AUCTION_ID as string);
-	let admin_cap = txn.object(ADMIN_CAP_ID as string);
+
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
+
+	if (acfg.clearingPrice < 1e9) {
+		throw new Error("Invalid clearing price");
+	}
+
 	txn.moveCall({
-		target: `${PACKAGE_ID}::auction::finalize_end`,
-		arguments: [admin_cap, auction, txn.pure("u64", parseInt(CLEAR_PRICE as string))],
+		target: `${acfg.packageId}::auction::finalize_end`,
+		arguments: [adminCap, auction, txn.pure("u64", acfg.clearingPrice)],
 	});
 
 	const result = await client.signAndExecuteTransaction({

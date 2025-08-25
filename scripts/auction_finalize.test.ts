@@ -1,6 +1,6 @@
 import { test, expect, describe } from "bun:test";
 
-import { batchAddresses, preprocessAddresses } from "./beelievers_auction_finalize";
+import { batchAddresses, preprocessAddresses } from "./auction_finalize";
 
 describe("preprocess Address | sort and validate address", () => {
 	test("preprocess happy case", () => {
