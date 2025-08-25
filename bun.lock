@@ -8,7 +8,7 @@
         "commander": "^14.0.0",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.2.1",
-        "redash": "^0.23.0",
+        "radash": "^12.1.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -69,7 +69,7 @@
 
     "poseidon-lite": ["poseidon-lite@0.2.1", "", {}, "sha512-xIr+G6HeYfOhCuswdqcFpSX47SPhm0EpisWJ6h7fHlWwaVIvH3dLnejpatrtw6Xc6HaLrpq05y7VRfvDmDGIog=="],
 
-    "redash": ["redash@0.23.0", "", {}, "sha512-6M9tt7HVvET3rGlIgXng7NzvFRiil5IUqn6W80Sr4bUJm6KMGgzIcSYlj8K+V24xo81kuSTIUmEBOze0/LwfsA=="],
+    "radash": ["radash@12.1.1", "", {}, "sha512-h36JMxKRqrAxVD8201FrCpyeNuUY9Y5zZwujr20fFO77tpUtGa6EZzfKw/3WaiBX95fq7+MpsuMLNdSnORAwSA=="],
 
     "typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
