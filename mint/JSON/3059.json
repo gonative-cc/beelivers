@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #3059",
+  "description": "A unique Beeliever from the Sending Love family",
+  "image": "3059.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Sending Love"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Closed"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Woman Full"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Music Headphones"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Bitcoin Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Emerald"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "3059.png"
+      }
+    ],
+    "category": "image"
+  }
+}

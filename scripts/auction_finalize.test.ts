@@ -1,5 +1,6 @@
-import { expect, test, describe } from "vitest";
-import { batchAddresses, preprocessAddresses } from "./auction_finalize.js";
+import { test, expect, describe } from "bun:test";
+
+import { batchAddresses, preprocessAddresses } from "./auction_finalize";
 
 describe("preprocess Address | sort and validate address", () => {
 	test("preprocess happy case", () => {
@@ -49,10 +50,9 @@ describe("batchAddresses tests", () => {
 			],
 			["0x1000000000000000000000000000000000000000000000000000000000000000"],
 		]);
-	});
 
-	test("batchAddresses failed case", () => {
-		expect(() => batchAddresses([], 10)).toThrow("list address is empty");
+		// empty
+		expect(batchAddresses([], 10)).toStrictEqual([]);
 	});
 
 	test("batch single addresses", () => {

@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #19",
+  "description": "A rare mythical Beeliever: yeti",
+  "image": "19.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "yeti"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "19.png"
+      }
+    ],
+    "category": "image"
+  }
+}

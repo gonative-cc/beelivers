@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #1843",
+  "description": "A unique Beeliever from the Packman family",
+  "image": "1843.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Packman"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Closed"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "None"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Bitcoin Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Red"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "1843.png"
+      }
+    ],
+    "category": "image"
+  }
+}

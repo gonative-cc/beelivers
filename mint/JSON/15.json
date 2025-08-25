@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #15",
+  "description": "A rare mythical Beeliever: squid",
+  "image": "15.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "squid"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "15.png"
+      }
+    ],
+    "category": "image"
+  }
+}

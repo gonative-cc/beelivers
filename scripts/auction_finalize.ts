@@ -3,10 +3,11 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 import * as dotenv from "dotenv";
 import { promises as fs } from "fs";
 import { Command } from "commander";
-import _ from "lodash";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { auctionConfMainnet, auctionConfTestnet, type AuctionConf } from "./auction.config.js";
+
+import { chunk } from "./utils";
 
 const MAX_ADDRESSES_PER_VECTOR = 500;
 
@@ -84,11 +85,10 @@ export function preprocessAddresses(addresses: string[]): string[] {
 }
 
 export function batchAddresses(addresses: string[], slot: number): string[][] {
-	// split addresses to chuck
 	if (addresses.length == 0) {
-		throw new Error("list address is empty");
+		return [];
 	}
-	return _.chunk(addresses, slot);
+	return chunk(addresses, slot);
 }
 
 async function set_winner(
@@ -99,9 +99,9 @@ async function set_winner(
 ) {
 	let number_txn = winners.length;
 
-	await finalizeStart(client, keypair, acfg, winners[0]);
+	await finalizeStart(client, keypair, acfg, winners[0]!);
 	for (let i = 1; i < number_txn; i++) {
-		await finalizeNext(client, keypair, acfg, winners[i]);
+		await finalizeNext(client, keypair, acfg, winners[i]!);
 	}
 }
 
@@ -200,6 +200,8 @@ async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: Auc
 	}
 }
 
-main().catch((error) => {
-	console.error("A fatal error occurred in the main function:", error);
-});
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("A fatal error occurred in the main function:", error);
+	});
+}

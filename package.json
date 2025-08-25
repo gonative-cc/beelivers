@@ -1,16 +1,15 @@
 {
   "name": "beelievers-nft",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "module": "index.ts",
   "type": "module",
-  "packageManager": "pnpm@10.14.0",
+  "private": true,
+  "description": "",
   "scripts": {
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -b",
-    "build:watch": "tsc -b -w",
-    "test": "vitest"
+    "format:move": "prettier-move --config .prettier-move.json -w",
+    "format:move-all": "prettier-move --config .prettier-move.json beelivers_auction/**/*.move mint_contract/**/*.move -w",
+    "test": "bun test"
   },
   "keywords": [],
   "author": "",
@@ -20,12 +19,14 @@
     "commander": "^14.0.0",
     "csv-parse": "^6.1.0",
     "dotenv": "^17.2.1",
-    "lodash": "^4.17.21"
+    "radash": "^12.1.1"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.20",
+    "@types/bun": "latest",
     "@types/node": "^24.2.1",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }
