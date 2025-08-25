@@ -12,6 +12,6 @@ worker-configuration.d.ts
 
 private*
 
-mint/JSON
-mint/badges_example.json
 mint/imagelinks.json
+mint/badges_example.json
+mint/JSON/
