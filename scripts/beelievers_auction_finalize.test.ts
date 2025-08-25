@@ -52,9 +52,8 @@ describe("batchAddresses tests", () => {
 		]);
 
 		// empty
-		expect(batchAddresses([], 10)).toStrictEqual([])
+		expect(batchAddresses([], 10)).toStrictEqual([]);
 	});
-
 
 	test("batch single addresses", () => {
 		const addr = "0x1000000000000000000000000000000000000000000000000000000000000000";
