@@ -3,9 +3,10 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 import * as dotenv from "dotenv";
 import { promises as fs } from "fs";
 import { Command } from "commander";
-import { chunk } from "radash";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+
+import { chunk } from "./utils";
 
 const MAX_ADDRESSES_PER_VECTOR = 500;
 
