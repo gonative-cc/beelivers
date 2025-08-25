@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #2923",
+  "description": "A unique Beeliever from the Idea family",
+  "image": "2923.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Idea"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Laser"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Lightbulb"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "None"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Red"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "2923.png"
+      }
+    ],
+    "category": "image"
+  }
+}

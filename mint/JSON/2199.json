@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #2199",
+  "description": "A unique Beeliever from the Bob family",
+  "image": "2199.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Bob"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Right"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Cap"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Native Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Blue"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "2199.png"
+      }
+    ],
+    "category": "image"
+  }
+}

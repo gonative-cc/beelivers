@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #3",
+  "description": "A rare mythical Beeliever: shreck",
+  "image": "3.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "shreck"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "3.png"
+      }
+    ],
+    "category": "image"
+  }
+}

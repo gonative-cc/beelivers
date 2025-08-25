@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #4631",
+  "description": "A unique Beeliever from the Dreamer family",
+  "image": "4631.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Dreamer"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Up"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Mocking"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Line Straight"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Hair"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Music Headphones"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Yellow"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "4631.png"
+      }
+    ],
+    "category": "image"
+  }
+}

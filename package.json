@@ -7,6 +7,8 @@
   "scripts": {
     "lint": "echo \"Error: no linter specified\"",
     "typecheck": "tsc --noEmit",
+    "format:move": "prettier-move --config .prettier-move.json -w",
+    "format:move-all": "prettier-move --config .prettier-move.json beelivers_auction/**/*.move mint_contract/**/*.move -w",
     "test": "bun test"
   },
   "keywords": [],

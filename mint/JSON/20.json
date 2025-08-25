@@ -1,0 +1,28 @@
+{
+  "name": "Beeliever #20",
+  "description": "A rare mythical Beeliever: hexapixa",
+  "image": "20.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Mythic Name",
+      "value": "hexapixa"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "20.png"
+      }
+    ],
+    "category": "image"
+  }
+}

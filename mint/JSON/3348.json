@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #3348",
+  "description": "A unique Beeliever from the Bob family",
+  "image": "3348.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Bob"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Right"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Woman Full"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Music Headphones"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Lights"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Pink"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "3348.png"
+      }
+    ],
+    "category": "image"
+  }
+}

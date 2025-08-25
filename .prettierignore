@@ -8,3 +8,5 @@ package.json
 worker-configuration.d.ts
 
 pnpm-workspace.yaml
+
+private*

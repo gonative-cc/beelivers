@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #5288",
+  "description": "A unique Beeliever from the Wind family",
+  "image": "5288.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Right"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Woman Full"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "None"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Native Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Light Blue"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "5288.png"
+      }
+    ],
+    "category": "image"
+  }
+}
