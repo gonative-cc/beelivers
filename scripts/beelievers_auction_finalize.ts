@@ -29,6 +29,10 @@ async function main() {
 		process.exit(1);
 	}
 	const file = program.args[0];
+	if (!file) {
+		console.error("❌ Error: Please provide a file to process.");
+		process.exit(1);
+	}
 
 	const { MNEMONIC } = process.env;
 
@@ -188,6 +192,8 @@ async function finalize(client: SuiClient, keypair: Ed25519Keypair) {
 	}
 }
 
-main().catch((error) => {
-	console.error("A fatal error occurred in the main function:", error);
-});
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("A fatal error occurred in the main function:", error);
+	});
+}
