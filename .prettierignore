@@ -4,11 +4,14 @@ build
 pnpm-lock.yaml
 node_modules
 package.json
+pnpm-workspace.yaml
+
+.prettier-move.json
 
 worker-configuration.d.ts
-
-pnpm-workspace.yaml
 
 private*
 
 mint/JSON
+mint/badges_example.json
+mint/imagelinks.json
