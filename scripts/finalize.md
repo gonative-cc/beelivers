@@ -39,12 +39,12 @@ We should prepare the auction winner list, data file should have format one line
 
 Set the winner list to auction
 
-```
+```bash
 node ./build/beelievers_auction_finalize.js set-winner data.txt
 ```
 
 Finalize the auction with clearing price set in config
 
-```
+```bash
 node ./build/beelievers_auction_finalize.js finalize
 ```
