@@ -45,7 +45,7 @@ Set the winner list to auction
 node ./build/beelievers_auction_finalize.js set-winner data.txt
 ```
 
-Finalize the auction with clearning price set in config
+Finalize the auction with clearing price set in config
 ```
 node ./build/beelievers_auction_finalize.js finalize
 ```
