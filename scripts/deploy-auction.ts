@@ -3,47 +3,46 @@ import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import * as dotenv from "dotenv";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { auctionConfMainnet, auctionConfTestnet } from "./auction.config.js";
 
 dotenv.config();
 
-const PACKAGE_ID = "";
-const START_MS = "";
-const DURATION_MS = "";
-const AUCTION_SIZE = "";
 
 async function main() {
 	const { MNEMONIC, NETWORK } = process.env;
 
-	if (!MNEMONIC || !PACKAGE_ID || !START_MS || !DURATION_MS || !AUCTION_SIZE) {
-		console.error("❌ Error: Missing required environment variables. Check your .env file.");
+	if (!MNEMONIC) {
+		console.error("❌ MNEMONIC Check your .env file.");
 		process.exit(1);
 	}
 
 	if (!NETWORK) {
-		console.error("❌ Error: SUI_RPC_URL is not set in your .env file.");
+		console.error("❌ Error: NETWORK is not set in your .env file.");
 		process.exit(1);
 	}
+
+	const auctionCfg = (NETWORK == "mainnet") ? auctionConfMainnet : auctionConfTestnet;
 
 	const rpcUrl = getFullnodeUrl(NETWORK as "mainnet" | "testnet" | "devnet" | "localnet");
 	const client = new SuiClient({ url: rpcUrl });
 	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
-	console.log(`📦 Package ID: ${PACKAGE_ID}`);
+	console.log(`📦 Package ID: ${auctionCfg.packageId}`);
 
 	const txn = new Transaction();
 
 	let admin = txn.moveCall({
-		target: `${PACKAGE_ID}::auction::create_admin_cap`,
+		target: `${auctionCfg.packageId}::auction::create_admin_cap`,
 		arguments: [],
 	});
 
 	txn.moveCall({
-		target: `${PACKAGE_ID}::auction::create`,
+		target: `${auctionCfg.packageId}::auction::create`,
 		arguments: [
 			admin,
-			txn.pure("u64", parseInt(START_MS)),
-			txn.pure("u64", parseInt(DURATION_MS)),
-			txn.pure("u32", parseInt(AUCTION_SIZE)),
+			txn.pure("u64", auctionCfg.startMs),
+			txn.pure("u64", auctionCfg.durationMs),
+			txn.pure("u32", auctionCfg.auctionSize),
 			txn.object.clock(),
 		],
 	});

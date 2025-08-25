@@ -36,7 +36,7 @@ async function main() {
 		.argument("<file...>", "A finalized addresses file")
 		.action(async (options) => {
 			const file = options[0];
-			console.log(`📦 Package ID: ${auctionCfg.package_id}`);
+			console.log(`📦 Package ID: ${auctionCfg.packageId}`);
 			console.log("---");
 			try {
 				let addresses = await readAddressesFromFile(file);
@@ -113,11 +113,11 @@ async function finalizeStart(
 ) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acfg.auction_id);
-	let admin_cap = txn.object(acfg.admin_cap_id);
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
 	txn.moveCall({
-		target: `${acfg.package_id}::auction::finalize_start`,
-		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
+		target: `${acfg.packageId}::auction::finalize_start`,
+		arguments: [adminCap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
 	const result = await client.signAndExecuteTransaction({
@@ -144,12 +144,12 @@ async function finalizeNext(
 ) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acfg.auction_id);
-	let admin_cap = txn.object(acfg.admin_cap_id);
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
 
 	txn.moveCall({
-		target: `${acfg.package_id}::auction::finalize_continue`,
-		arguments: [admin_cap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
+		target: `${acfg.packageId}::auction::finalize_continue`,
+		arguments: [adminCap, auction, txn.pure("vector<address>", addresses), txn.object.clock()],
 	});
 
 	const result = await client.signAndExecuteTransaction({
@@ -171,16 +171,16 @@ async function finalizeNext(
 async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: AuctionConf) {
 	let txn = new Transaction();
 
-	let auction = txn.object(acfg.auction_id);
-	let admin_cap = txn.object(acfg.admin_cap_id);
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
 
-	if (acfg.clearing_price < 1e9) {
+	if (acfg.clearingPrice < 1e9) {
 		throw new Error("Invalid clearing price");
 	}
 
 	txn.moveCall({
-		target: `${acfg.package_id}::auction::finalize_end`,
-		arguments: [admin_cap, auction, txn.pure("u64", acfg.clearing_price)],
+		target: `${acfg.packageId}::auction::finalize_end`,
+		arguments: [adminCap, auction, txn.pure("u64", acfg.clearingPrice)],
 	});
 
 	const result = await client.signAndExecuteTransaction({

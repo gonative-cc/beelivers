@@ -1,5 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { batchAddresses, preprocessAddresses } from "./beelievers_auction_finalize.js";
+import { batchAddresses, preprocessAddresses } from "./auction_finalize.js";
 
 describe("preprocess Address | sort and validate address", () => {
 	test("preprocess happy case", () => {
