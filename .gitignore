@@ -54,6 +54,8 @@ build
 .cache
 .parcel-cache
 .temp
+tmp/
+/dist
 
 # vitepress build output
 **/.vitepress/dist
@@ -65,12 +67,14 @@ build
 # TernJS port file
 .tern-port
 
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
 contrib/scripts/*.json
 
 .trace
 .coverage*
 
-/dist
+# Editors
+.DS_Store
+.idea
+*.log
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
