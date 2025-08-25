@@ -35,7 +35,7 @@ module beelievers_mint::mint {
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
         token_id: u64,
-        badge: String,
+        badges: vector<String>,
         minter: address,
     }
 
@@ -76,11 +76,10 @@ module beelievers_mint::mint {
         premint_completed: bool,
         minting_active: bool,
         mint_start_time: u64,
-        auction_contract: address,
         treasury_address: address,
         mint_price: u64,
         nft_metadata: Table<u64, VecMap<String, String>>,
-        nft_badges: Table<u64, String>,
+        nft_badges: Table<u64, vector<String>>,
         displayable_badges: Table<String, bool>,
         preset_urls: Table<u64, Url>,
     }
@@ -91,7 +90,7 @@ module beelievers_mint::mint {
         image_url: Url,
         attributes: VecMap<String, String>,
         token_id: u64,
-        badge: String,
+        badges: vector<String>,
     }
 
     fun init(witness: MINT, ctx: &mut TxContext) {
@@ -110,11 +109,10 @@ module beelievers_mint::mint {
             partner_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_partners: 0, 
-            auction_contract: @0x0,
             treasury_address: @0x0,
             mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
-            nft_badges: table::new<u64, String>(ctx),
+            nft_badges: table::new<u64, vector<String>>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
             preset_urls: table::new<u64, Url>(ctx)
         };
@@ -138,7 +136,7 @@ module beelievers_mint::mint {
         display::add(&mut nft_display, string::utf8(b"description"), string::utf8(b"BTCFi Beelievers is more than an NFT- it's a movement to make Bitcoin work in DeFi without bridges, wrappers, or custodians. The Beeliever NFT is your badge of conviction, fueling Native's nBTC and BYield on Sui."));
         display::add(&mut nft_display, string::utf8(b"image_url"), string::utf8(b"https://walrus.tusky.io/{image_url}"));
         display::add(&mut nft_display, string::utf8(b"attributes"), string::utf8(b"{attributes}"));
-        display::add(&mut nft_display, string::utf8(b"badge"), string::utf8(b"{badge}"));
+        display::add(&mut nft_display, string::utf8(b"badges"), string::utf8(b"{badges}"));
         display::update_version(&mut nft_display);
 
         let (transfer_policy, transfer_policy_cap) = transfer_policy::new<BeelieverNFT>(&publisher, ctx);
@@ -155,7 +153,7 @@ module beelievers_mint::mint {
     fun create_nft(
         collection: &BeelieversCollection,
         token_id: u64,
-        badge: String,
+        badges: vector<String>,
         ctx: &mut TxContext
     ): BeelieverNFT {
         let mut name = string::utf8(b"Beelievers #");
@@ -181,7 +179,7 @@ module beelievers_mint::mint {
             image_url,
             attributes,
             token_id,
-            badge,
+            badges,
         }
     }
 
@@ -319,9 +317,13 @@ module beelievers_mint::mint {
         assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
 
         if (table::contains(&collection.nft_badges, token_id)) {
-            *table::borrow_mut(&mut collection.nft_badges, token_id) = badge;
+            let mut badges = *table::borrow(&collection.nft_badges, token_id);
+            vector::push_back(&mut badges, badge);
+            *table::borrow_mut(&mut collection.nft_badges, token_id) = badges;
         } else {
-            table::add(&mut collection.nft_badges, token_id, badge);
+            let mut badges = vector::empty<String>();
+            vector::push_back(&mut badges, badge);
+            table::add(&mut collection.nft_badges, token_id, badges);
         };
     }
 
@@ -329,21 +331,27 @@ module beelievers_mint::mint {
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         token_ids: vector<u64>,
-        badges: vector<String>
+        badges: vector<vector<String>>
     ) {
         assert!(vector::length(&token_ids) == vector::length(&badges), ERROR_INVALID_QUANTITY);
 
         let mut index = 0;
         while (index < vector::length(&token_ids)) {
             let token_id = *vector::borrow(&token_ids, index);
-            let badge = *vector::borrow(&badges, index);
+            let badge_list = *vector::borrow(&badges, index);
             
             assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
 
             if (table::contains(&collection.nft_badges, token_id)) {
-                *table::borrow_mut(&mut collection.nft_badges, token_id) = badge;
+                let mut existing_badges = *table::borrow(&collection.nft_badges, token_id);
+                let mut i = 0;
+                while (i < vector::length(&badge_list)) {
+                    vector::push_back(&mut existing_badges, *vector::borrow(&badge_list, i));
+                    i = i + 1;
+                };
+                *table::borrow_mut(&mut collection.nft_badges, token_id) = existing_badges;
             } else {
-                table::add(&mut collection.nft_badges, token_id, badge);
+                table::add(&mut collection.nft_badges, token_id, badge_list);
             };
             
             index = index + 1;
@@ -371,11 +379,15 @@ module beelievers_mint::mint {
     ) {
         assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
         
-        // This allows overwriting existing badges or adding new ones
+        // This allows adding new badges to existing ones
         if (table::contains(&collection.nft_badges, token_id)) {
-            *table::borrow_mut(&mut collection.nft_badges, token_id) = badge;
+            let mut badges = *table::borrow(&collection.nft_badges, token_id);
+            vector::push_back(&mut badges, badge);
+            *table::borrow_mut(&mut collection.nft_badges, token_id) = badges;
         } else {
-            table::add(&mut collection.nft_badges, token_id, badge);
+            let mut badges = vector::empty<String>();
+            vector::push_back(&mut badges, badge);
+            table::add(&mut collection.nft_badges, token_id, badges);
         };
     }
 
@@ -504,13 +516,13 @@ module beelievers_mint::mint {
                 vector::remove(&mut collection.available_normals, index)
             };
             
-            let badge = if (table::contains(&collection.nft_badges, token_id)) {
+            let badges = if (table::contains(&collection.nft_badges, token_id)) {
                 *table::borrow(&collection.nft_badges, token_id)
             } else {
-                string::utf8(b"")
+                vector::empty<String>()
             };
             
-            let nft = create_nft(collection, token_id, badge, ctx);
+            let nft = create_nft(collection, token_id, badges, ctx);
             let nft_id = object::id(&nft);
 
             collection.total_minted = collection.total_minted + 1;
@@ -526,7 +538,7 @@ module beelievers_mint::mint {
             event::emit(NFTMinted {
                 nft_id,
                 token_id,
-                badge,
+                badges,
                 minter: tx_context::sender(ctx),
             });
 
@@ -577,13 +589,13 @@ module beelievers_mint::mint {
             select_random_normal(collection, random, ctx)
         };
 
-        let badge = if (table::contains(&collection.nft_badges, token_id)) {
+        let badges = if (table::contains(&collection.nft_badges, token_id)) {
             *table::borrow(&collection.nft_badges, token_id)
         } else {
-            string::utf8(b"None")
+            vector::empty<String>()
         };
 
-        let nft = create_nft(collection, token_id, badge, ctx);
+        let nft = create_nft(collection, token_id, badges, ctx);
         let nft_id = object::id(&nft);
 
         collection.total_minted = collection.total_minted + 1;
@@ -604,7 +616,7 @@ module beelievers_mint::mint {
         event::emit(NFTMinted {
             nft_id,
             token_id,
-            badge,
+            badges,
             minter: sender,
         });
 
@@ -653,11 +665,11 @@ module beelievers_mint::mint {
         has_minted(collection, addr)
     }
 
-    public fun get_nft_badge(collection: &BeelieversCollection, token_id: u64): String {
+    public fun get_nft_badges(collection: &BeelieversCollection, token_id: u64): vector<String> {
         if (table::contains(&collection.nft_badges, token_id)) {
             *table::borrow(&collection.nft_badges, token_id)
         } else {
-            string::utf8(b"None")
+            vector::empty<String>()
         }
     }
 

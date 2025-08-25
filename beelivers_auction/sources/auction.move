@@ -34,7 +34,7 @@ const EInsufficientBidForWinner: u64 = 14;
 const EPaused: u64 = 15;
 const ERaffleTooBig: u64 = 16;
 const ERaffleAlreadyDone: u64 = 17;
-
+const ENotPause: u64 = 18;
 // ========== Structs ==========
 
 public struct AdminCap has key, store {
@@ -84,6 +84,11 @@ public struct FinalizedEvent has copy, drop {
     /// funds from the auction transferred to the admin.
     funds: u64,
     clearing_price: u64,
+}
+
+public struct EmergencyEvent has copy, drop {
+    total_fund: u64,
+    auction_id: ID,
 }
 
 /// Create admin capability
@@ -314,10 +319,29 @@ public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
         coin::from_balance(auction.vault.split(refund), ctx),
         sender,
     );
-
-    // TODO: event
 }
 
+#[allow(lint(self_transfer))]
+public fun emergency_withdraw(
+    admin_cap: &AdminCap,
+    auction: &mut Auction,
+    ctx: &mut TxContext,
+) {
+    assert!(auction.paused, ENotPause);
+    assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
+    let total_fund = auction.vault.value();
+    let sender = ctx.sender();
+
+    transfer::public_transfer(
+        coin::from_balance(auction.vault.split(total_fund), ctx),
+        sender,
+    );
+
+    emit(EmergencyEvent {
+        total_fund,
+        auction_id: object::id(auction),
+    })
+}
 // ========== View functions ==========
 
 /// returns auction start timestamp in ms

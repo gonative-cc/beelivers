@@ -1,3 +1,4 @@
+// Beelievers Production Deployment Script
 // author: @null
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { SuiClient } from '@mysten/sui.js/client';
@@ -10,16 +11,24 @@ import { KioskTransaction } from '@mysten/kiosk';
 import { TransferPolicyTransaction } from '@mysten/kiosk';
 import { Secp256k1Keypair } from '@mysten/sui.js/keypairs/secp256k1';
 
-// Beelievers Configuration
-const PACKAGE_ID = '0xYOUR_PACKAGE_ID'; // Replace with actual package ID
-const ADMIN_CAP = '0xYOUR_ADMIN_CAP'; // Replace with actual admin cap
-const COLLECTION_ID = '0xYOUR_COLLECTION_ID'; // Replace with actual collection ID
-const TRANSFER_POLICY_ID = '0xYOUR_TRANSFER_POLICY_ID'; // Replace with actual transfer policy ID
+// Production Configuration
+const PACKAGE_ID = '0xYOUR_PRODUCTION_PACKAGE_ID'; // Replace with production package ID
+const ADMIN_CAP = '0xYOUR_PRODUCTION_ADMIN_CAP'; // Replace with production admin cap
+const COLLECTION_ID = '0xYOUR_PRODUCTION_COLLECTION_ID'; // Replace with production collection ID
+const TRANSFER_POLICY_ID = '0xYOUR_PRODUCTION_TRANSFER_POLICY_ID'; // Replace with production transfer policy ID
 const MODULE_NAME = 'mint';
-const ADMIN_PRIVATE_KEY = 'suiprivkeyxxxxx'; // Replace with your private key
+const ADMIN_PRIVATE_KEY = 'suiprivkeyxxxxx'; // Replace with your production private key
 
-const RPC_URL = 'https://fullnode.mainnet.sui.io:443';
-const BATCH_SIZE = 50;
+const RPC_URL = 'https://fullnode.mainnet.sui.io:443'; // Production mainnet
+const BATCH_SIZE = 50; // Production batch size
+const DELAY_BETWEEN_BATCHES = 5000; // 5 seconds between batches
+
+// Production logging with timestamps
+function log(message, type = 'INFO') {
+    const timestamp = new Date().toISOString();
+    const emoji = type === 'SUCCESS' ? '✅' : type === 'ERROR' ? '❌' : type === 'WARNING' ? '⚠️' : 'ℹ️';
+    console.log(`[${timestamp}] ${emoji} ${message}`);
+}
 
 function suiprivkeyToHex(suiprivkey) {
     const decoded = bech32.decode(suiprivkey);
@@ -28,39 +37,19 @@ function suiprivkeyToHex(suiprivkey) {
     return fromHex(Buffer.from(privateKeyBytes).toString('hex'));
 }
 
-// Initialize collection and return important object IDs
-async function initializeCollection() {
-    const client = new SuiClient({ url: RPC_URL });
-    const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
-    
-    const txb = new TransactionBlock();
-    txb.setSender(signer.getPublicKey().toSuiAddress());
-    txb.setGasBudget(1000000000);
 
-    // Initialize Beelievers collection
-    txb.moveCall({
-        target: `${PACKAGE_ID}::${MODULE_NAME}::init`,
-        arguments: [],
-    });
 
-    try {
-        const result = await client.signAndExecuteTransactionBlock({
-            signer,
-            transactionBlock: txb,
-            options: { showEffects: true, showObjectChanges: true }
-        });
-        console.log("Initialization successful:", result);
-        return result;
-    } catch (error) {
-        console.error("Error initializing collection:", error);
-        throw error;
-    }
-}
-
-// Add partners to the collection
+// Add partners to the collection with validation
 async function addPartners(partners) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    // Validate partners array
+    if (!Array.isArray(partners) || partners.length === 0) {
+        throw new Error('Partners array must be non-empty');
+    }
+
+    log(`Adding ${partners.length} partners to collection...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -80,49 +69,27 @@ async function addPartners(partners) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully added ${partners.length} partners:`, result.digest);
+        log(`Successfully added ${partners.length} partners`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error adding partners:", error);
+        log(`Error adding partners: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-// Set auction contract address
-async function setAuctionContract(auctionContractAddress) {
-    const client = new SuiClient({ url: RPC_URL });
-    const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
 
-    const txb = new TransactionBlock();
-    txb.setGasBudget(1000000000);
-
-    txb.moveCall({
-        target: `${PACKAGE_ID}::${MODULE_NAME}::set_auction_contract`,
-        arguments: [
-            txb.object(ADMIN_CAP),
-            txb.object(COLLECTION_ID),
-            txb.pure(auctionContractAddress),
-        ],
-    });
-
-    try {
-        const result = await client.signAndExecuteTransactionBlock({
-            signer,
-            transactionBlock: txb,
-            options: { showEffects: true }
-        });
-        console.log("Successfully set auction contract:", result.digest);
-        return result;
-    } catch (error) {
-        console.error("Error setting auction contract:", error);
-        throw error;
-    }
-}
-
-// Set NFT badges in bulk
+// Set NFT badges in bulk with progress tracking
 async function setBulkNFTBadges(tokenIds, badges) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    // Validate inputs
+    if (!Array.isArray(tokenIds) || !Array.isArray(badges) || tokenIds.length !== badges.length) {
+        throw new Error('Token IDs and badges arrays must have the same length');
+    }
+
+    log(`Setting badges for ${tokenIds.length} NFTs...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -143,18 +110,26 @@ async function setBulkNFTBadges(tokenIds, badges) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully set badges for ${tokenIds.length} NFTs:`, result.digest);
+        log(`Successfully set badges for ${tokenIds.length} NFTs`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error setting bulk badges:", error);
+        log(`Error setting bulk badges: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-// Set NFT attributes in bulk
+// Set NFT attributes in bulk with progress tracking
 async function setBulkNFTAttributes(nftIds, attributeKeys, attributeValues) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    // Validate inputs
+    if (!Array.isArray(nftIds) || !Array.isArray(attributeKeys) || !Array.isArray(attributeValues)) {
+        throw new Error('All input arrays must be valid');
+    }
+
+    log(`Setting attributes for ${nftIds.length} NFTs...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -176,17 +151,26 @@ async function setBulkNFTAttributes(nftIds, attributeKeys, attributeValues) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully set attributes for ${nftIds.length} NFTs:`, result.digest);
+        log(`Successfully set attributes for ${nftIds.length} NFTs`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error setting bulk attributes:", error);
+        log(`Error setting bulk attributes: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
+// Set NFT URLs in bulk
 async function setBulkNFTUrls(nftIds, urls) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    // Validate inputs
+    if (!Array.isArray(nftIds) || !Array.isArray(urls) || nftIds.length !== urls.length) {
+        throw new Error('NFT IDs and URLs arrays must have the same length');
+    }
+
+    log(`Setting URLs for ${nftIds.length} NFTs...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -207,10 +191,11 @@ async function setBulkNFTUrls(nftIds, urls) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully set URLs for ${nftIds.length} NFTs:`, result.digest);
+        log(`Successfully set URLs for ${nftIds.length} NFTs`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error setting bulk URLs:", error);
+        log(`Error setting bulk URLs: ${error.message}`, 'ERROR');
         throw error;
     }
 }
@@ -219,6 +204,8 @@ async function setBulkNFTUrls(nftIds, urls) {
 async function addNFTBadge(tokenId, badge) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log(`Adding badge "${badge}" to NFT #${tokenId}...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -239,10 +226,11 @@ async function addNFTBadge(tokenId, badge) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully added badge "${badge}" to NFT #${tokenId}:`, result.digest);
+        log(`Successfully added badge "${badge}" to NFT #${tokenId}`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error adding badge:", error);
+        log(`Error adding badge: ${error.message}`, 'ERROR');
         throw error;
     }
 }
@@ -252,8 +240,11 @@ async function addNFTBadges(tokenId, badges) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
 
+    log(`Adding ${badges.length} badges to NFT #${tokenId}...`, 'INFO');
+
     // Add badges one by one to avoid transaction size limits
-    for (const badge of badges) {
+    for (let i = 0; i < badges.length; i++) {
+        const badge = badges[i];
         const txb = new TransactionBlock();
         txb.setGasBudget(1000000000);
 
@@ -273,12 +264,14 @@ async function addNFTBadges(tokenId, badges) {
                 transactionBlock: txb,
                 options: { showEffects: true }
             });
-            console.log(`Successfully added badge "${badge}" to NFT #${tokenId}:`, result.digest);
+            log(`Added badge "${badge}" to NFT #${tokenId} (${i + 1}/${badges.length})`, 'SUCCESS');
             
-            // Add small delay between transactions
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Add delay between transactions
+            if (i < badges.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         } catch (error) {
-            console.error(`Error adding badge "${badge}" to NFT #${tokenId}:`, error);
+            log(`Error adding badge "${badge}" to NFT #${tokenId}: ${error.message}`, 'ERROR');
             throw error;
         }
     }
@@ -288,6 +281,8 @@ async function addNFTBadges(tokenId, badges) {
 async function setBadgeDisplayable(badgeName, displayable) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log(`Setting badge "${badgeName}" displayable to ${displayable}...`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -308,18 +303,22 @@ async function setBadgeDisplayable(badgeName, displayable) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log(`Successfully set badge ${badgeName} displayable to ${displayable}:`, result.digest);
+        log(`Successfully set badge "${badgeName}" displayable to ${displayable}`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error setting badge displayable:", error);
+        log(`Error setting badge displayable: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
+// Execute production premint
 async function executeNativePremint() {
     const client = new SuiClient({ url: RPC_URL });
     const kioskClient = new KioskClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log("Creating kiosk for premint...", 'INFO');
 
     // Create kiosk first
     const tx1 = new TransactionBlock();
@@ -337,7 +336,8 @@ async function executeNativePremint() {
             options: { showEffects: true }
         });
 
-        console.log("Kiosk creation successful:", result1.digest);
+        log("Kiosk creation successful", 'SUCCESS');
+        log(`Kiosk transaction digest: ${result1.digest}`, 'INFO');
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         const txEffects = await client.getTransactionBlock({
@@ -358,15 +358,17 @@ async function executeNativePremint() {
             throw new Error('Failed to retrieve kiosk or kiosk cap ID');
         }
 
-        // Execute premint in batches of 20
+        // Execute premint in batches
         const PREMINT_BATCH_SIZE = 20;
         const totalPremint = 210; // 1-210 range
         let completedPremint = 0;
 
+        log(`Starting premint process for NFTs #1-${totalPremint} in batches of ${PREMINT_BATCH_SIZE}...`, 'INFO');
+
         for (let startId = 1; startId <= totalPremint; startId += PREMINT_BATCH_SIZE) {
             const endId = Math.min(startId + PREMINT_BATCH_SIZE - 1, totalPremint);
             
-            console.log(`Executing premint batch ${startId}-${endId}...`);
+            log(`Executing premint batch ${startId}-${endId}...`, 'INFO');
             
             const tx2 = new TransactionBlock();
             tx2.setGasBudget(2000000000); 
@@ -392,33 +394,38 @@ async function executeNativePremint() {
                 });
                 
                 completedPremint += (endId - startId + 1);
-                console.log(`✅ Premint batch ${startId}-${endId} successful:`, result2.digest);
-                console.log(`Progress: ${completedPremint}/${totalPremint} NFTs preminted`);
+                log(`Premint batch ${startId}-${endId} successful`, 'SUCCESS');
+                log(`Progress: ${completedPremint}/${totalPremint} NFTs preminted`, 'INFO');
+                log(`Batch transaction digest: ${result2.digest}`, 'INFO');
                 
                 // Add delay between batches
                 if (endId < totalPremint) {
-                    console.log("Waiting 5 seconds before next batch...");
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    log(`Waiting ${DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                    await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
                 }
                 
             } catch (error) {
-                console.error(`Error executing premint batch ${startId}-${endId}:`, error);
+                log(`Error executing premint batch ${startId}-${endId}: ${error.message}`, 'ERROR');
                 throw error;
             }
         }
 
-        console.log(`🎉 Successfully completed all premint batches! Total: ${completedPremint} NFTs`);
+        log(`Premint process completed successfully! Total: ${completedPremint} NFTs`, 'SUCCESS');
         return true;
 
     } catch (error) {
-        console.error("Error in premint process:", error);
+        log(`Error in premint process: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
+// Start minting
 async function startMinting(startTime) {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log(`Starting minting at timestamp: ${startTime}`, 'INFO');
+    log(`Minting will start at: ${new Date(startTime * 1000).toISOString()}`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -438,10 +445,11 @@ async function startMinting(startTime) {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log("Successfully started minting:", result.digest);
+        log("Successfully started minting", 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error starting minting:", error);
+        log(`Error starting minting: ${error.message}`, 'ERROR');
         throw error;
     }
 }
@@ -450,6 +458,8 @@ async function startMinting(startTime) {
 async function pauseMinting() {
     const client = new SuiClient({ url: RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log("Pausing minting...", 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
@@ -468,18 +478,22 @@ async function pauseMinting() {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        console.log("Successfully paused minting:", result.digest);
+        log("Successfully paused minting", 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error pausing minting:", error);
+        log(`Error pausing minting: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
+// Add royalty and lock rules
 async function addRoyaltyAndLockRules() {
     const client = new SuiClient({ url: RPC_URL });
     const kioskClient = new KioskClient({ client, network: Network.MAINNET });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
+
+    log("Adding royalty and lock rules...", 'INFO');
 
     const policyType = `${PACKAGE_ID}::${MODULE_NAME}::BeelieverNFT`;
     const policyCaps = await kioskClient.getOwnedTransferPoliciesByType({
@@ -510,19 +524,23 @@ async function addRoyaltyAndLockRules() {
             transactionBlock: tx,
             options: { showEffects: true }
         });
-        console.log("Successfully added royalty and lock rules:", result.digest);
+        log("Successfully added royalty and lock rules", 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        console.error("Error adding rules:", error);
+        log(`Error adding rules: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-
+// Process badges from JSON file
 async function setBulkNFTBadgesFromJson() {
     try {
+        log("Reading badges from badges.json...", 'INFO');
         const badgesData = JSON.parse(await fs.readFile('badges.json', 'utf8'));
         const processedBadges = new Set();
+
+        log(`Found ${Object.keys(badgesData).length} badge entries in badges.json`, 'INFO');
 
         for (let i = 1; i <= 6021; i += BATCH_SIZE) {
             const batchEnd = Math.min(i + BATCH_SIZE - 1, 6021);
@@ -546,30 +564,33 @@ async function setBulkNFTBadgesFromJson() {
             }
 
             if (tokenIds.length > 0) {
-                console.log(`Processing badges batch from NFT #${i} to #${batchEnd}`);
+                log(`Processing badges batch from NFT #${i} to #${batchEnd} (${tokenIds.length} NFTs)`, 'INFO');
                 try {
                     await setBulkNFTBadges(tokenIds, badges);
-                    console.log(`Successfully processed ${tokenIds.length} badges in current batch`);
+                    log(`Successfully processed ${tokenIds.length} badges in current batch`, 'SUCCESS');
                     
                     if (i + BATCH_SIZE <= 6021) {
-                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        log(`Waiting ${DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
-                    console.error(`Error processing batch ${i}-${batchEnd}:`, error);
+                    log(`Error processing batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
+                    throw error;
                 }
             }
         }
 
-        console.log(`Completed processing badges. Total NFTs processed: ${processedBadges.size}`);
+        log(`Completed processing badges. Total NFTs processed: ${processedBadges.size}`, 'SUCCESS');
     } catch (error) {
-        console.error('Error reading or processing badges.json:', error);
+        log(`Error reading or processing badges.json: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-
+// Process attributes from JSON files
 async function setBulkNFTAttributesFromJson() {
     try {
+        log("Processing NFT attributes from JSON files...", 'INFO');
         const nftIds = [];
         const allKeys = [];
         const allValues = [];
@@ -604,38 +625,43 @@ async function setBulkNFTAttributesFromJson() {
                         processedNfts.add(j);
                     }
                 } catch (error) {
-                    console.error(`Error reading attributes for NFT #${j}:`, error);
+                    log(`Error reading attributes for NFT #${j}: ${error.message}`, 'WARNING');
                     continue;
                 }
             }
 
             if (batchNftIds.length > 0) {
-                console.log(`Processing attributes batch from NFT #${i} to #${batchEnd}`);
+                log(`Processing attributes batch from NFT #${i} to #${batchEnd} (${batchNftIds.length} NFTs)`, 'INFO');
                 try {
                     await setBulkNFTAttributes(batchNftIds, batchKeys, batchValues);
-                    console.log(`Successfully processed attributes for ${batchNftIds.length} NFTs in current batch`);
+                    log(`Successfully processed attributes for ${batchNftIds.length} NFTs in current batch`, 'SUCCESS');
                     
                     if (i + BATCH_SIZE <= 6021) {
-                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        log(`Waiting ${DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
-                    console.error(`Error processing attributes batch ${i}-${batchEnd}:`, error);
+                    log(`Error processing attributes batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
+                    throw error;
                 }
             }
         }
 
-        console.log(`Completed processing attributes. Total NFTs processed: ${processedNfts.size}`);
+        log(`Completed processing attributes. Total NFTs processed: ${processedNfts.size}`, 'SUCCESS');
     } catch (error) {
-        console.error('Error processing NFT attributes:', error);
+        log(`Error processing NFT attributes: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-
+// Process URLs from JSON file
 async function setBulkNFTUrlsFromJson() {
     try {
+        log("Reading URLs from imagelinks.json...", 'INFO');
         const imageLinksData = JSON.parse(await fs.readFile('imagelinks.json', 'utf8'));
         const processedUrls = new Set();
+
+        log(`Found ${Object.keys(imageLinksData).length} URL entries in imagelinks.json`, 'INFO');
 
         for (let i = 1; i <= 6021; i += BATCH_SIZE) {
             const batchEnd = Math.min(i + BATCH_SIZE - 1, 6021);
@@ -651,30 +677,33 @@ async function setBulkNFTUrlsFromJson() {
             }
 
             if (nftIds.length > 0) {
-                console.log(`Processing URLs batch from NFT #${i} to #${batchEnd}`);
+                log(`Processing URLs batch from NFT #${i} to #${batchEnd} (${nftIds.length} NFTs)`, 'INFO');
                 try {
                     await setBulkNFTUrls(nftIds, urls);
-                    console.log(`Successfully processed ${nftIds.length} URLs in current batch`);
+                    log(`Successfully processed ${nftIds.length} URLs in current batch`, 'SUCCESS');
                     
                     if (i + BATCH_SIZE <= 6021) {
-                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        log(`Waiting ${DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
-                    console.error(`Error processing batch ${i}-${batchEnd}:`, error);
+                    log(`Error processing batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
+                    throw error;
                 }
             }
         }
 
-        console.log(`Completed processing URLs. Total NFTs processed: ${processedUrls.size}`);
+        log(`Completed processing URLs. Total NFTs processed: ${processedUrls.size}`, 'SUCCESS');
     } catch (error) {
-        console.error('Error reading or processing imagelinks.json:', error);
+        log(`Error reading or processing imagelinks.json: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-
+// Read and validate addresses from file
 async function readAddresses(filePath) {
     try {
+        log(`Reading addresses from ${filePath}...`, 'INFO');
         const fileContent = await fs.readFile(filePath, 'utf8');
         const lines = fileContent.split('\n')
             .map(line => line.trim())
@@ -692,18 +721,18 @@ async function readAddresses(filePath) {
             }
         }
         
-        console.log(`\nAddress validation results for ${filePath}:`);
-        console.log(`Total addresses found: ${lines.length}`);
-        console.log(`Valid addresses: ${validAddresses.length}`);
-        console.log(`Invalid addresses: ${invalidAddresses.length}`);
+        log(`Address validation results for ${filePath}:`, 'INFO');
+        log(`Total addresses found: ${lines.length}`, 'INFO');
+        log(`Valid addresses: ${validAddresses.length}`, 'SUCCESS');
+        log(`Invalid addresses: ${invalidAddresses.length}`, invalidAddresses.length > 0 ? 'WARNING' : 'INFO');
         
         if (invalidAddresses.length > 0) {
-            console.log('\nInvalid addresses found:');
-            invalidAddresses.forEach(addr => console.log(addr));
+            log('Invalid addresses found:', 'WARNING');
+            invalidAddresses.forEach(addr => log(`  ${addr}`, 'WARNING'));
             
             const invalidFile = filePath.replace('.txt', '_invalid.txt');
             await fs.writeFile(invalidFile, invalidAddresses.join('\n'));
-            console.log(`\nInvalid addresses have been written to ${invalidFile}`);
+            log(`Invalid addresses have been written to ${invalidFile}`, 'INFO');
         }
         
         if (validAddresses.length === 0) {
@@ -712,7 +741,7 @@ async function readAddresses(filePath) {
         
         return validAddresses;
     } catch (error) {
-        console.error(`Error reading addresses file: ${error.message}`);
+        log(`Error reading addresses file: ${error.message}`, 'ERROR');
         throw error;
     }
 }
@@ -738,126 +767,116 @@ function padAddress(address) {
     return '0x' + paddedAddr;
 }
 
+// Main function with production-ready error handling
 async function main() {
     const operation = process.argv[2];
     const filePath = process.argv[3]; 
 
+    log("🚀 Beelievers Production Script Started", 'INFO');
+
     try {
         switch (operation) {
-            case 'init':
-                console.log("Initializing Beelievers collection...");
-                await initializeCollection();
-                break;
 
             case 'add-partners':
                 if (!filePath) {
-                    console.error("Please provide a file path: node beelievers_script.js add-partners <file_path>");
+                    log("Please provide a file path: node production_script.js add-partners <file_path>", 'ERROR');
                     break;
                 }
-                console.log("Adding partners from file...");
+                log("Adding partners from file...", 'INFO');
                 const partners = await readAddresses(filePath);
                 await addPartners(partners);
                 break;
 
-            case 'set-auction-contract':
-                if (!filePath) {
-                    console.error("Please provide auction contract address: node beelievers_script.js set-auction-contract <address>");
-                    break;
-                }
-                console.log("Setting auction contract...");
-                await setAuctionContract(filePath);
-                break;
 
             case 'set-badges':
-                console.log("Setting NFT badges from badges.json...");
+                log("Setting NFT badges from badges.json...", 'INFO');
                 await setBulkNFTBadgesFromJson();
                 break;
 
             case 'add-badge':
                 if (!filePath) {
-                    console.error("Please provide token ID and badge: node beelievers_script.js add-badge <token_id,badge>");
+                    log("Please provide token ID and badge: node production_script.js add-badge <token_id,badge>", 'ERROR');
                     break;
                 }
                 const [tokenId, badge] = filePath.split(',');
-                console.log(`Adding badge "${badge}" to NFT #${tokenId}...`);
+                log(`Adding badge "${badge}" to NFT #${tokenId}...`, 'INFO');
                 await addNFTBadge(parseInt(tokenId), badge);
                 break;
 
             case 'add-badges':
                 if (!filePath) {
-                    console.error("Please provide token ID and badges: node beelievers_script.js add-badges <token_id,badge1,badge2,badge3>");
+                    log("Please provide token ID and badges: node production_script.js add-badges <token_id,badge1,badge2,badge3>", 'ERROR');
                     break;
                 }
                 const parts = filePath.split(',');
                 const nftId = parseInt(parts[0]);
                 const badges = parts.slice(1);
-                console.log(`Adding badges [${badges.join(', ')}] to NFT #${nftId}...`);
+                log(`Adding badges [${badges.join(', ')}] to NFT #${nftId}...`, 'INFO');
                 await addNFTBadges(nftId, badges);
                 break;
 
             case 'set-attributes':
-                console.log("Setting NFT attributes from JSON files...");
+                log("Setting NFT attributes from JSON files...", 'INFO');
                 await setBulkNFTAttributesFromJson();
                 break;
 
             case 'set-urls':
-                console.log("Setting NFT URLs from imagelinks.json...");
+                log("Setting NFT URLs from imagelinks.json...", 'INFO');
                 await setBulkNFTUrlsFromJson();
                 break;
 
             case 'set-badge-display':
                 if (!filePath) {
-                    console.error("Please provide badge name and displayable: node beelievers_script.js set-badge-display <badge_name> <true/false>");
+                    log("Please provide badge name and displayable: node production_script.js set-badge-display <badge_name,true/false>", 'ERROR');
                     break;
                 }
                 const [badgeName, displayable] = filePath.split(',');
-                console.log(`Setting badge ${badgeName} displayable to ${displayable}...`);
+                log(`Setting badge ${badgeName} displayable to ${displayable}...`, 'INFO');
                 await setBadgeDisplayable(badgeName, displayable === 'true');
                 break;
 
             case 'add-rules':
-                console.log("Adding royalty and lock rules...");
+                log("Adding royalty and lock rules...", 'INFO');
                 await addRoyaltyAndLockRules();
                 break;
 
             case 'premint':
-                console.log("Executing Native premint...");
+                log("Executing Native premint...", 'INFO');
                 await executeNativePremint();
                 break;
 
             case 'start-minting':
                 if (!filePath) {
-                    console.error("Please provide start time: node beelievers_script.js start-minting <timestamp>");
+                    log("Please provide start time: node production_script.js start-minting <timestamp>", 'ERROR');
                     break;
                 }
                 const startTime = parseInt(filePath);
-                console.log(`Starting minting at ${startTime}...`);
+                log(`Starting minting at ${startTime}...`, 'INFO');
                 await startMinting(startTime);
                 break;
 
             case 'pause-minting':
-                console.log("Pausing minting...");
+                log("Pausing minting...", 'INFO');
                 await pauseMinting();
                 break;
 
             default:
-                console.log(`
-Beelievers Mint Setup Script
+                log(`
+🏭 Beelievers Production Deployment Script
 
 Usage:
-  Initialize Collection:     node beelievers_script.js init
-  Add Partners:             node beelievers_script.js add-partners <file_path>
-  Set Auction Contract:     node beelievers_script.js set-auction-contract <address>
-  Set Badges:               node beelievers_script.js set-badges
-  Add Badge:                node beelievers_script.js add-badge <token_id,badge>
-  Add Multiple Badges:      node beelievers_script.js add-badges <token_id,badge1,badge2,badge3>
-  Set Attributes:           node beelievers_script.js set-attributes
-  Set URLs:                 node beelievers_script.js set-urls
-  Set Badge Display:        node beelievers_script.js set-badge-display <badge_name,true/false>
-  Add Rules:                node beelievers_script.js add-rules
-  Execute Premint:          node beelievers_script.js premint
-  Start Minting:            node beelievers_script.js start-minting <timestamp>
-  Pause Minting:            node beelievers_script.js pause-minting
+  Add Partners:             node production_script.js add-partners <file_path>
+  Set Auction Contract:     node production_script.js set-auction-contract <address>
+  Set Badges:               node production_script.js set-badges
+  Add Badge:                node production_script.js add-badge <token_id,badge>
+  Add Multiple Badges:      node production_script.js add-badges <token_id,badge1,badge2,badge3>
+  Set Attributes:           node production_script.js set-attributes
+  Set URLs:                 node production_script.js set-urls
+  Set Badge Display:        node production_script.js set-badge-display <badge_name,true/false>
+  Add Rules:                node production_script.js add-rules
+  Execute Premint:          node production_script.js premint
+  Start Minting:            node production_script.js start-minting <timestamp>
+  Pause Minting:            node production_script.js pause-minting
 
 Required Files:
   - badges.json: Token ID to badge mapping (supports single badge or array of badges)
@@ -868,22 +887,32 @@ Badge Format Examples:
   Single badge: {"1": "Early Adopter"}
   Multiple badges: {"1": ["Early Adopter", "Whale", "OG"]}
 
+Production Features:
+  - Mainnet deployment
+  - Comprehensive error handling
+  - Progress tracking
+  - Batch processing with delays
+  - Detailed logging with timestamps
+  - Address validation
+  - Transaction digest logging
+
 Example:
-  node beelievers_script.js add-partners partners.txt
-  node beelievers_script.js set-badges
-  node beelievers_script.js add-badge 1,Whale
-  node beelievers_script.js add-badges 1,Early Adopter,OG,Whale
-  node beelievers_script.js set-attributes
-  node beelievers_script.js set-urls
-  node beelievers_script.js add-rules
-  node beelievers_script.js premint
-  node beelievers_script.js start-minting 1744088400000
-  node beelievers_script.js pause-minting
-                `);
+  node production_script.js add-partners partners.txt
+  node production_script.js set-badges
+  node production_script.js add-badge 1,Whale
+  node production_script.js add-badges 1,Early Adopter,OG,Whale
+  node production_script.js set-attributes
+  node production_script.js set-urls
+  node production_script.js add-rules
+  node production_script.js premint
+  node production_script.js start-minting 1744088400000
+  node production_script.js pause-minting
+                `, 'INFO');
         }
     } catch (error) {
-        console.error("Error:", error);
+        log(`Script execution failed: ${error.message}`, 'ERROR');
+        process.exit(1);
     }
 }
 
-main(); 
+main();
