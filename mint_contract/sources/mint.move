@@ -13,6 +13,7 @@ module beelievers_mint::mint {
     use sui::transfer_policy;
     use sui::kiosk;
     use sui::vec_map::{Self, VecMap};
+    use sui::object::{Self, UID};
 
     use beelivers_auction::auction::{Self, Auction};
 
@@ -76,6 +77,7 @@ module beelievers_mint::mint {
         premint_completed: bool,
         minting_active: bool,
         mint_start_time: u64,
+        auction_contract: address,
         treasury_address: address,
         mint_price: u64,
         nft_metadata: Table<u64, VecMap<String, String>>,
@@ -109,7 +111,8 @@ module beelievers_mint::mint {
             partner_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_partners: 0, 
-            treasury_address: @0x0,
+            auction_contract: @0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704,
+            treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
             mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             nft_badges: table::new<u64, vector<String>>(ctx),
@@ -209,7 +212,7 @@ module beelievers_mint::mint {
 
         let mut generator = random::new_generator(random, ctx);
         let available_length = vector::length(&collection.available_mythics);
-        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length as u64)) as u64);
+        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length - 1) as u64)) as u64;
 
         vector::swap_remove(&mut collection.available_mythics, random_index)
     }
@@ -223,7 +226,7 @@ module beelievers_mint::mint {
 
         let mut generator = random::new_generator(random, ctx);
         let available_length = vector::length(&collection.available_normals);
-        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length as u64)) as u64);
+        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length - 1) as u64)) as u64;
 
         vector::swap_remove(&mut collection.available_normals, random_index)
     }
@@ -306,6 +309,30 @@ module beelievers_mint::mint {
         collection: &mut BeelieversCollection
     ) {
         collection.minting_active = false;
+    }
+
+    public entry fun set_auction_contract(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        auction_address: address
+    ) {
+        collection.auction_contract = auction_address;
+    }
+
+    public entry fun set_treasury(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        treasury_address: address
+    ) {
+        collection.treasury_address = treasury_address;
+    }
+
+    public entry fun set_mint_price(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        price: u64
+    ) {
+        collection.mint_price = price;
     }
 
     public entry fun set_nft_badge(
@@ -574,6 +601,9 @@ module beelievers_mint::mint {
         assert!(current_time >= collection.mint_start_time, ERROR_MINTING_NOT_ACTIVE);
         assert!(!has_minted(collection, sender), ERROR_ALREADY_MINTED);
         assert!(collection.total_minted < TOTAL_SUPPLY, ERROR_INSUFFICIENT_SUPPLY);
+        
+        // Validate that the auction contract matches the authorized one
+        assert!(object::id(auction) == collection.auction_contract, ERROR_UNAUTHORIZED);
 
         if (collection.mint_price > 0) {
             assert!(coin::value(&payment) >= collection.mint_price, ERROR_INSUFFICIENT_PAYMENT);
@@ -586,7 +616,12 @@ module beelievers_mint::mint {
             assert!(collection.mythic_minted < MYTHIC_SUPPLY, ERROR_NO_MYTHICS_AVAILABLE);
             select_random_mythic(collection, random, ctx)
         } else {
-            select_random_normal(collection, random, ctx)
+            // Auction winners try normal first, fall back to mythic if normals are exhausted
+            if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
+                select_random_mythic(collection, random, ctx)
+            } else {
+                select_random_normal(collection, random, ctx)
+            }
         };
 
         let badges = if (table::contains(&collection.nft_badges, token_id)) {
