@@ -16,11 +16,11 @@ dotenv.config();
 async function main() {
 	const program = new Command();
 
-	const { MNEMONIC, NETWORK } = process.env;
+	const { MNEMONIC, NETWORK, SK } = process.env;
 
 	const auctionCfg = NETWORK == "mainnet" ? auctionConfMainnet : auctionConfTestnet;
 
-	if (!MNEMONIC) {
+	if (!MNEMONIC && !SK) {
 		console.error("❌ Error: Missing required environment variables. Check your .env file.");
 		process.exit(1);
 	}
@@ -30,11 +30,16 @@ async function main() {
 	);
 
 	const client = new SuiClient({ url: rpcUrl });
-	const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
+	let keypair: Ed25519Keypair;
+	if (SK) {
+		keypair = Ed25519Keypair.fromSecretKey(SK);
+	} else {
+		keypair = Ed25519Keypair.deriveKeypair(MNEMONIC!);
+	}
 
 	program
-		.command("set-winner")
-		.argument("<file...>", "A finalized addresses file")
+		.command("set-winners")
+		.argument("<file...>", "file with list of winners")
 		.action(async (options) => {
 			const file = options[0];
 			console.log(`📦 Package ID: ${auctionCfg.packageId}`);
@@ -44,7 +49,6 @@ async function main() {
 				addresses = preprocessAddresses(addresses);
 				let bAddreses = batchAddresses(addresses, MAX_ADDRESSES_PER_VECTOR);
 
-				console.log(bAddreses);
 				await set_winner(client, keypair, auctionCfg, bAddreses);
 			} catch (err) {
 				console.error("❌ Error: ", err);
@@ -54,6 +58,10 @@ async function main() {
 
 	program.command("finalize").action(async () => {
 		await finalizeEnd(client, keypair, auctionCfg);
+	});
+
+	program.command("raffle").action(async () => {
+		await raffle(client, keypair, auctionCfg);
 	});
 
 	program.parse(process.argv);
@@ -143,7 +151,6 @@ async function finalizeNext(
 	addresses: string[],
 ) {
 	let txn = new Transaction();
-
 	let auction = txn.object(acfg.auctionId);
 	let adminCap = txn.object(acfg.adminCapId);
 
@@ -155,10 +162,7 @@ async function finalizeNext(
 	const result = await client.signAndExecuteTransaction({
 		transaction: txn,
 		signer: keypair,
-		options: {
-			showEvents: true,
-			showEffects: true,
-		},
+		options: { showEvents: true, showEffects: true },
 	});
 	await client.waitForTransaction({ digest: result.digest });
 	if (result.effects?.status.status === "success") {
@@ -170,10 +174,8 @@ async function finalizeNext(
 
 async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: AuctionConf) {
 	let txn = new Transaction();
-
 	let auction = txn.object(acfg.auctionId);
 	let adminCap = txn.object(acfg.adminCapId);
-
 	if (acfg.clearingPrice < 1e9) {
 		throw new Error("Invalid clearing price");
 	}
@@ -186,15 +188,44 @@ async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: Auc
 	const result = await client.signAndExecuteTransaction({
 		transaction: txn,
 		signer: keypair,
-		options: {
-			showEvents: true,
-			showEffects: true,
-		},
+		options: { showEvents: true, showEffects: true },
 	});
 	await client.waitForTransaction({ digest: result.digest });
 	if (result.effects?.status.status === "success") {
 		console.log(`✅ Auction finalize successful!`);
 		console.log(`   🔗 Digest: ${result.digest}`);
+	} else {
+		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
+	}
+}
+
+async function raffle(client: SuiClient, keypair: Ed25519Keypair, acfg: AuctionConf) {
+	let txn = new Transaction();
+	let auction = txn.object(acfg.auctionId);
+	let adminCap = txn.object(acfg.adminCapId);
+
+	txn.moveCall({
+		target: `${acfg.packageId}::auction::run_raffle`,
+		arguments: [
+			auction,
+			adminCap,
+			txn.pure("u32", acfg.raffleSize),
+			// txn.object(SUI_RANDOMNESS_STATE_OBJECT_ID),
+			// txn.object.random(),
+			txn.object("0x0000000000000000000000000000000000000000000000000000000000000008"),
+		],
+	});
+
+	const result = await client.signAndExecuteTransaction({
+		transaction: txn,
+		signer: keypair,
+		options: { showEvents: true, showEffects: true },
+	});
+	await client.waitForTransaction({ digest: result.digest });
+	if (result.effects?.status.status === "success") {
+		console.log(`✅ Auction raffle successful!`);
+		console.log(`   🔗 Digest: ${result.digest}`);
+		console.log(`   🔗 Event: ${result.events?.[0]}`);
 	} else {
 		throw new Error(`Transaction failed: ${result.effects?.status.error}`);
 	}
