@@ -13,9 +13,6 @@ module beelievers_mint::mint {
     use sui::transfer_policy;
     use sui::kiosk;
     use sui::vec_map::{Self, VecMap};
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
 
     use beelivers_auction::auction::{Self, Auction};
 
@@ -52,9 +49,6 @@ module beelievers_mint::mint {
         address: address,
     }
 
-    public struct AuctionContractUpdated has copy, drop {
-        new_contract: address,
-    }
 
     public struct MintingStarted has copy, drop {
         timestamp: u64,
