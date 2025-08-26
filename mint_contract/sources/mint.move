@@ -314,7 +314,7 @@ module beelievers_mint::mint {
         token_id: u64,
         badge: String
     ) {
-        assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
+        assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
 
         if (table::contains(&collection.nft_badges, token_id)) {
             let mut badges = *table::borrow(&collection.nft_badges, token_id);
@@ -340,7 +340,7 @@ module beelievers_mint::mint {
             let token_id = *vector::borrow(&token_ids, index);
             let badge_list = *vector::borrow(&badges, index);
             
-            assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
+            assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
 
             if (table::contains(&collection.nft_badges, token_id)) {
                 let mut existing_badges = *table::borrow(&collection.nft_badges, token_id);
@@ -377,7 +377,7 @@ module beelievers_mint::mint {
         token_id: u64,
         badge: String,
     ) {
-        assert!(token_id < TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
+        assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
         
         // This allows adding new badges to existing ones
         if (table::contains(&collection.nft_badges, token_id)) {
