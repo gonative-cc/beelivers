@@ -11,18 +11,13 @@ import { KioskTransaction } from '@mysten/kiosk';
 import { TransferPolicyTransaction } from '@mysten/kiosk';
 import { Secp256k1Keypair } from '@mysten/sui.js/keypairs/secp256k1';
 
-// Configuration
-const ENVIRONMENT = process.argv[2] || 'test'; // 'test' or 'production'
-const SKIP_PREMINT = process.argv.includes('--skip-premint');
-const SKIP_MINTING = process.argv.includes('--skip-minting');
-
 // Environment-specific configurations
 const CONFIGS = {
     test: {
-        PACKAGE_ID: '0xcb54e2ee9ec3cc841b086ae890cdfc38b1817f6348be2790782d3472dfeea351',
-        ADMIN_CAP: '0x99a056c5c1db0aa0d39bcd03dc87f52b7b160e8b172a867536e3fc646929240f',
-        COLLECTION_ID: '0x5c76dfc4baa0e40aa0bd543cce4061b7402ba48b273117ed28211452a9ff6cd6',
-        TRANSFER_POLICY_ID: '0x30ca00bdae2803beb838c4d1c8353cb120ce48d1802e6341b1850cfc24a76fbd',
+        PACKAGE_ID: '0xc32e1d79120d9111858f123564fea470dc04948cfbbdc0df422a912bb77058f9',
+        ADMIN_CAP: '0xe0eb4faaf26bee9a6f9f2a78f5c144c5fd08784e26ae9bb732082785f6d80530',
+        COLLECTION_ID: '0x557010fe270384caddaa82c70a36c72da2cdc22dfe0982fae3abf33de6678b5d',
+        TRANSFER_POLICY_ID: '0x241425fe25aaee8d56b7e6ca553873d319e4df04067d2d8b2dd282d794b47351',
         AUCTION_CONTRACT: '0x345c10a69dab4ba85be56067c94c4a626c51e297b884e43b113d3eb99ed7a0f3',
         RPC_URL: 'https://fullnode.testnet.sui.io:443',
         BATCH_SIZE: 5,
@@ -46,15 +41,29 @@ const CONFIGS = {
     }
 };
 
-const CONFIG = CONFIGS[ENVIRONMENT];
+// Configuration
+const SKIP_PREMINT = process.argv.includes('--skip-premint');
+const SKIP_MINTING = process.argv.includes('--skip-minting');
+
+function getConfig() {
+    let environment = process.argv[2] || 'test';
+    
+    // Handle test-minting and set-premint commands
+    if (environment === 'test-minting' || environment === 'set-premint') {
+        environment = 'test';
+    }
+    
+    return CONFIGS[environment];
+}
 const MODULE_NAME = 'mint';
-const ADMIN_PRIVATE_KEY = 'suiprivkeyxxxx'; // Replace with your private key
+const ADMIN_PRIVATE_KEY = 'suiprivkeyxxx'; // Replace with your private key
 
 // Enhanced logging with environment and timestamps
 function log(message, type = 'INFO') {
     const timestamp = new Date().toISOString();
     const emoji = type === 'SUCCESS' ? '✅' : type === 'ERROR' ? '❌' : type === 'WARNING' ? '⚠️' : 'ℹ️';
-    const env = ENVIRONMENT.toUpperCase();
+    const environment = process.argv[2] || 'test';
+    const env = environment.toUpperCase();
     console.log(`[${timestamp}] [${env}] ${emoji} ${message}`);
 }
 
@@ -67,7 +76,8 @@ function suiprivkeyToHex(suiprivkey) {
 
 // Initialize client and signer
 function getClientAndSigner() {
-    const client = new SuiClient({ url: CONFIG.RPC_URL });
+    const config = getConfig();
+    const client = new SuiClient({ url: config.RPC_URL });
     const signer = Secp256k1Keypair.fromSecretKey(suiprivkeyToHex(ADMIN_PRIVATE_KEY));
     return { client, signer };
 }
@@ -84,11 +94,12 @@ async function addTestPartners() {
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
 
+    const config = getConfig();
     txb.moveCall({
-        target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
+        target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
         arguments: [
-            txb.object(CONFIG.ADMIN_CAP),
-            txb.object(CONFIG.COLLECTION_ID),
+            txb.object(config.ADMIN_CAP),
+            txb.object(config.COLLECTION_ID),
             txb.pure(testPartners),
         ],
     });
@@ -138,11 +149,12 @@ async function addProductionPartners() {
             const txb = new TransactionBlock();
             txb.setGasBudget(1000000000);
 
+            const config = getConfig();
             txb.moveCall({
-                target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
+                target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
                 arguments: [
-                    txb.object(CONFIG.ADMIN_CAP),
-                    txb.object(CONFIG.COLLECTION_ID),
+                    txb.object(config.ADMIN_CAP),
+                    txb.object(config.COLLECTION_ID),
                     txb.pure(batchPartners),
                 ],
             });
@@ -190,8 +202,9 @@ async function setBadgesFromJson() {
 
         log(`Found ${Object.keys(badgesData).length} badge entries in badges.json`, 'INFO');
 
-        for (let i = 1; i <= CONFIG.TOTAL_NFTS; i += CONFIG.BATCH_SIZE) {
-            const batchEnd = Math.min(i + CONFIG.BATCH_SIZE - 1, CONFIG.TOTAL_NFTS);
+        const config = getConfig();
+        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
+            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
             const tokenIds = [];
             const badges = [];
 
@@ -217,10 +230,10 @@ async function setBadgesFromJson() {
                 txb.setGasBudget(1000000000);
 
                 txb.moveCall({
-                    target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_badges`,
+                    target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_badges`,
                     arguments: [
-                        txb.object(CONFIG.ADMIN_CAP),
-                        txb.object(CONFIG.COLLECTION_ID),
+                        txb.object(config.ADMIN_CAP),
+                        txb.object(config.COLLECTION_ID),
                         txb.pure(tokenIds),
                         txb.pure(badges),
                     ],
@@ -234,9 +247,9 @@ async function setBadgesFromJson() {
                     });
                     log(`Successfully processed ${tokenIds.length} badges in current batch`, 'SUCCESS');
                     
-                    if (i + CONFIG.BATCH_SIZE <= CONFIG.TOTAL_NFTS) {
-                        log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                        await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+                    if (i + config.BATCH_SIZE <= config.TOTAL_NFTS) {
+                        log(`Waiting ${config.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, config.DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
                     log(`Error processing batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
@@ -254,14 +267,15 @@ async function setBadgesFromJson() {
 
 // Set attributes from JSON files
 async function setAttributesFromJson() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
 
     try {
         log("Processing NFT attributes from JSON files...", 'INFO');
         const processedNfts = new Set();
 
-        for (let i = 1; i <= CONFIG.TOTAL_NFTS; i += CONFIG.BATCH_SIZE) {
-            const batchEnd = Math.min(i + CONFIG.BATCH_SIZE - 1, CONFIG.TOTAL_NFTS);
+        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
+            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
             const batchNftIds = [];
             const batchKeys = [];
             const batchValues = [];
@@ -301,10 +315,10 @@ async function setAttributesFromJson() {
                 txb.setGasBudget(1000000000);
 
                 txb.moveCall({
-                    target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_attributes`,
+                    target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_attributes`,
                     arguments: [
-                        txb.object(CONFIG.ADMIN_CAP),
-                        txb.object(CONFIG.COLLECTION_ID),
+                        txb.object(config.ADMIN_CAP),
+                        txb.object(config.COLLECTION_ID),
                         txb.pure(batchNftIds),
                         txb.pure(batchKeys),
                         txb.pure(batchValues),
@@ -319,9 +333,9 @@ async function setAttributesFromJson() {
                     });
                     log(`Successfully processed attributes for ${batchNftIds.length} NFTs in current batch`, 'SUCCESS');
                     
-                    if (i + CONFIG.BATCH_SIZE <= CONFIG.TOTAL_NFTS) {
-                        log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                        await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+                    if (i + config.BATCH_SIZE <= config.TOTAL_NFTS) {
+                        log(`Waiting ${config.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, config.DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
                     log(`Error processing attributes batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
@@ -339,6 +353,7 @@ async function setAttributesFromJson() {
 
 // Set URLs from JSON file
 async function setUrlsFromJson() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
 
     try {
@@ -348,8 +363,8 @@ async function setUrlsFromJson() {
 
         log(`Found ${Object.keys(imageLinksData).length} URL entries in imagelinks.json`, 'INFO');
 
-        for (let i = 1; i <= CONFIG.TOTAL_NFTS; i += CONFIG.BATCH_SIZE) {
-            const batchEnd = Math.min(i + CONFIG.BATCH_SIZE - 1, CONFIG.TOTAL_NFTS);
+        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
+            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
             const nftIds = [];
             const urls = [];
 
@@ -368,10 +383,10 @@ async function setUrlsFromJson() {
                 txb.setGasBudget(1000000000);
 
                 txb.moveCall({
-                    target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_urls`,
+                    target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_urls`,
                     arguments: [
-                        txb.object(CONFIG.ADMIN_CAP),
-                        txb.object(CONFIG.COLLECTION_ID),
+                        txb.object(config.ADMIN_CAP),
+                        txb.object(config.COLLECTION_ID),
                         txb.pure(nftIds),
                         txb.pure(urls.map(url => Array.from(Buffer.from(url)))),
                     ],
@@ -385,9 +400,9 @@ async function setUrlsFromJson() {
                     });
                     log(`Successfully processed ${nftIds.length} URLs in current batch`, 'SUCCESS');
                     
-                    if (i + CONFIG.BATCH_SIZE <= CONFIG.TOTAL_NFTS) {
-                        log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                        await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+                    if (i + config.BATCH_SIZE <= config.TOTAL_NFTS) {
+                        log(`Waiting ${config.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, config.DELAY_BETWEEN_BATCHES));
                     }
                 } catch (error) {
                     log(`Error processing batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
@@ -405,6 +420,7 @@ async function setUrlsFromJson() {
 
 // Set badge display settings
 async function setBadgeDisplaySettings() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
 
     // Common badges that should be displayable
@@ -419,10 +435,10 @@ async function setBadgeDisplaySettings() {
         txb.setGasBudget(1000000000);
 
         txb.moveCall({
-            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::set_badge_displayable`,
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_badge_displayable`,
             arguments: [
-                txb.object(CONFIG.ADMIN_CAP),
-                txb.object(CONFIG.COLLECTION_ID),
+                txb.object(config.ADMIN_CAP),
+                txb.object(config.COLLECTION_ID),
                 txb.pure(badgeName),
                 txb.pure(true), // Set as displayable
             ],
@@ -447,15 +463,17 @@ async function setBadgeDisplaySettings() {
 
 // Add royalty and lock rules
 async function addRoyaltyAndLockRules() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
+    const environment = process.argv[2] || 'test';
     const kioskClient = new KioskClient({ 
         client, 
-        network: ENVIRONMENT === 'production' ? Network.MAINNET : Network.TESTNET 
+        network: environment === 'production' ? Network.MAINNET : Network.TESTNET 
     });
 
     log("Adding royalty and lock rules...", 'INFO');
 
-    const policyType = `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::BeelieverNFT`;
+    const policyType = `${config.PACKAGE_ID}::${MODULE_NAME}::BeelieverNFT`;
     const policyCaps = await kioskClient.getOwnedTransferPoliciesByType({
         type: policyType,
         address: signer.getPublicKey().toSuiAddress()
@@ -500,8 +518,9 @@ async function executePremint() {
         return;
     }
 
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
-    const kioskClient = new KioskClient({ url: CONFIG.RPC_URL });
+    const kioskClient = new KioskClient({ url: config.RPC_URL });
 
     log("Creating kiosk for premint...", 'INFO');
 
@@ -575,11 +594,11 @@ async function executePremint() {
                 tx2.setGasBudget(10000000000); //10 sui budget
 
                 tx2.moveCall({
-                    target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
+                    target: `${config.PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
                     arguments: [
-                        tx2.object(CONFIG.ADMIN_CAP),
-                        tx2.object(CONFIG.COLLECTION_ID),
-                        tx2.object(CONFIG.TRANSFER_POLICY_ID),
+                        tx2.object(config.ADMIN_CAP),
+                        tx2.object(config.COLLECTION_ID),
+                        tx2.object(config.TRANSFER_POLICY_ID),
                         tx2.object(kioskId),
                         tx2.object(kioskCapId),
                         tx2.pure(startId), 
@@ -601,8 +620,8 @@ async function executePremint() {
                     
                                         // Add delay between batches
                     if (endId < range.end || range !== premintRanges[premintRanges.length - 1]) {
-                        log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                        await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+                        log(`Waiting ${config.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, config.DELAY_BETWEEN_BATCHES));
                     }
                     
                 } catch (error) {
@@ -628,22 +647,23 @@ async function startMinting() {
         return;
     }
 
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
 
     // Use start time from config (convert from milliseconds to seconds)
-    const startTime = Math.floor(CONFIG.MINT_START_TIME / 1000);
+    const startTime = Math.floor(config.MINT_START_TIME);
 
     log(`Starting minting at timestamp: ${startTime}`, 'INFO');
-    log(`Minting will start at: ${new Date(startTime * 1000).toISOString()}`, 'INFO');
+    log(`Minting will start at: ${new Date(startTime).toISOString()}`, 'INFO');
 
     const txb = new TransactionBlock();
     txb.setGasBudget(1000000000);
 
     txb.moveCall({
-        target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::start_minting`,
+        target: `${config.PACKAGE_ID}::${MODULE_NAME}::start_minting`,
         arguments: [
-            txb.object(CONFIG.ADMIN_CAP),
-            txb.object(CONFIG.COLLECTION_ID),
+            txb.object(config.ADMIN_CAP),
+            txb.object(config.COLLECTION_ID),
             txb.pure(startTime),
         ],
     });
@@ -665,6 +685,7 @@ async function startMinting() {
 
 // Test minting (for testing after deployment)
 async function testMinting() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
 
     log("Testing minting functionality...", 'INFO');
@@ -679,10 +700,10 @@ async function testMinting() {
     txb.setGasBudget(1000000000);
 
     txb.moveCall({
-        target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::start_minting`,
+        target: `${config.PACKAGE_ID}::${MODULE_NAME}::start_minting`,
         arguments: [
-            txb.object(CONFIG.ADMIN_CAP),
-            txb.object(CONFIG.COLLECTION_ID),
+            txb.object(config.ADMIN_CAP),
+            txb.object(config.COLLECTION_ID),
             txb.pure(startTime),
         ],
     });
@@ -712,8 +733,9 @@ async function testMinting() {
 
 // Perform actual test mint
 async function performTestMint() {
+    const config = getConfig();
     const { client, signer } = getClientAndSigner();
-    const kioskClient = new KioskClient({ url: CONFIG.RPC_URL });
+    const kioskClient = new KioskClient({ url: config.RPC_URL });
 
     log("Performing actual test mint...", 'INFO');
 
@@ -769,14 +791,14 @@ async function performTestMint() {
         const [coin] = tx2.splitCoins(tx2.gas, [tx2.pure(0)]);
 
         tx2.moveCall({
-            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::mint`,
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::mint`,
             arguments: [
-                tx2.object(CONFIG.COLLECTION_ID),
+                tx2.object(config.COLLECTION_ID),
                 coin, // payment
-                tx2.object(CONFIG.TRANSFER_POLICY_ID),
+                tx2.object(config.TRANSFER_POLICY_ID),
                 tx2.object("0x8"), // random
                 tx2.object("0x6"), // clock
-                tx2.object(CONFIG.AUCTION_CONTRACT), // auction contract
+                tx2.object(config.AUCTION_CONTRACT), // auction contract
                 tx2.object(kioskId),
                 tx2.object(kioskCapId),
             ],
@@ -811,8 +833,44 @@ async function performTestMint() {
     }
 }
 
+// Set premint completed (for testing)
+async function setPremintCompleted(completed = true) {
+    const config = getConfig();
+    const { client, signer } = getClientAndSigner();
+
+    try {
+        log(`Setting premint_completed to ${completed}...`, 'INFO');
+        
+        const txb = new TransactionBlock();
+        txb.setGasBudget(1000000000);
+
+        txb.moveCall({
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_premint_completed`,
+            arguments: [
+                txb.object(config.ADMIN_CAP),
+                txb.object(config.COLLECTION_ID),
+                txb.pure(completed),
+            ],
+        });
+
+        const result = await client.signAndExecuteTransactionBlock({
+            signer,
+            transactionBlock: txb,
+            options: { showEffects: true }
+        });
+        
+        log(`Successfully set premint_completed to ${completed}`, 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
+        return result;
+    } catch (error) {
+        log(`Error setting premint_completed: ${error.message}`, 'ERROR');
+        throw error;
+    }
+}
+
 // Check collection stats
 async function checkCollectionStats() {
+    const config = getConfig();
     const { client } = getClientAndSigner();
 
     try {
@@ -822,15 +880,17 @@ async function checkCollectionStats() {
         txb.setGasBudget(1000000000);
 
         txb.moveCall({
-            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::get_collection_stats`,
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::get_collection_stats`,
             arguments: [
-                txb.object(CONFIG.COLLECTION_ID),
+                txb.object(config.COLLECTION_ID),
             ],
         });
 
         const result = await client.dryRunTransactionBlock({
             transactionBlock: txb,
         });
+
+        console.log(result)
 
         if (result.results && result.results.length > 0) {
             const returnValues = result.results[0].returnValues;
@@ -856,9 +916,11 @@ async function checkCollectionStats() {
 
 // Run complete setup
 async function runCompleteSetup() {
-    log(`🚀 Starting Beelievers ${ENVIRONMENT.toUpperCase()} Setup...`, 'INFO');
-    log(`Configuration: ${CONFIG.TOTAL_NFTS} NFTs, Batch Size: ${CONFIG.BATCH_SIZE}, Premint Range: ${CONFIG.PREMINT_RANGE}`, 'INFO');
-log(`Mint Start Time: ${new Date(CONFIG.MINT_START_TIME).toISOString()} (${CONFIG.MINT_START_TIME} ms)`, 'INFO');
+    const config = getConfig();
+    const environment = process.argv[2] || 'test';
+    log(`🚀 Starting Beelievers ${environment.toUpperCase()} Setup...`, 'INFO');
+    log(`Configuration: ${config.TOTAL_NFTS} NFTs, Batch Size: ${config.BATCH_SIZE}, Premint Range: ${config.PREMINT_RANGE}`, 'INFO');
+log(`Mint Start Time: ${new Date(config.MINT_START_TIME).toISOString()} (${config.MINT_START_TIME} ms)`, 'INFO');
     
     if (SKIP_PREMINT) log("⚠️ Premint will be skipped", 'WARNING');
     if (SKIP_MINTING) log("⚠️ Minting will be skipped", 'WARNING');
@@ -866,7 +928,7 @@ log(`Mint Start Time: ${new Date(CONFIG.MINT_START_TIME).toISOString()} (${CONFI
     try {
         // Step 1: Add partners
         log("\n1️⃣ Adding partners...", 'INFO');
-        if (ENVIRONMENT === 'test') {
+        if (environment === 'test') {
             await addTestPartners();
         } else {
             await addProductionPartners();
@@ -910,14 +972,14 @@ log(`Mint Start Time: ${new Date(CONFIG.MINT_START_TIME).toISOString()} (${CONFI
 
         log("\n🎉 Setup completed successfully!", 'SUCCESS');
         log("\n📊 Setup Summary:", 'INFO');
-        log(`   ✅ Partners added (${ENVIRONMENT === 'test' ? '3 test partners' : 'from partners.txt'})`, 'SUCCESS');
-        log(`   ✅ Badges set for ${CONFIG.TOTAL_NFTS} NFTs`, 'SUCCESS');
-        log(`   ✅ Attributes set for ${CONFIG.TOTAL_NFTS} NFTs`, 'SUCCESS');
-        log(`   ✅ URLs set for ${CONFIG.TOTAL_NFTS} NFTs`, 'SUCCESS');
+        log(`   ✅ Partners added (${environment === 'test' ? '3 test partners' : 'from partners.txt'})`, 'SUCCESS');
+        log(`   ✅ Badges set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
+        log(`   ✅ Attributes set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
+        log(`   ✅ URLs set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
         log(`   ✅ Badge display settings configured`, 'SUCCESS');
         log(`   ✅ Royalty and lock rules added`, 'SUCCESS');
         if (!SKIP_PREMINT) {
-            log(`   ✅ Premint executed (NFTs #1-${CONFIG.PREMINT_RANGE})`, 'SUCCESS');
+            log(`   ✅ Premint executed (NFTs #1-${config.PREMINT_RANGE})`, 'SUCCESS');
         }
         if (!SKIP_MINTING) {
             log(`   ✅ Minting started`, 'SUCCESS');
@@ -936,7 +998,7 @@ log(`Mint Start Time: ${new Date(CONFIG.MINT_START_TIME).toISOString()} (${CONFI
 async function main() {
     const operation = process.argv[2];
 
-    if (!operation || (operation !== 'test' && operation !== 'production' && operation !== 'test-minting')) {
+    if (!operation || (operation !== 'test' && operation !== 'production' && operation !== 'test-minting' && operation !== 'set-premint')) {
         log(`
 🏭 Beelievers Complete Setup Script
 
@@ -944,6 +1006,7 @@ Usage:
   Test Setup:        node setup_script.js test
   Production Setup:  node setup_script.js production
   Test Minting:      node setup_script.js test-minting
+  Set Premint:       node setup_script.js set-premint
 
 Options:
   --skip-premint     Skip the premint process
@@ -960,6 +1023,7 @@ Commands:
   test              - Run complete test setup (partners, badges, attributes, URLs, premint, minting)
   production        - Run complete production setup (partners, badges, attributes, URLs, premint, minting)
   test-minting      - Test minting functionality only (starts minting immediately)
+  set-premint       - Set premint_completed to true (for testing)
 
 Required Files:
   - badges.json: Token ID to badge mapping
@@ -997,6 +1061,9 @@ Mint Start Time Configuration:
         if (operation === 'test-minting') {
             log("🧪 Testing minting functionality...", 'INFO');
             await testMinting();
+        } else if (operation === 'set-premint') {
+            log("🔧 Setting premint_completed to true...", 'INFO');
+            await setPremintCompleted(true);
         } else {
             await runCompleteSetup();
         }

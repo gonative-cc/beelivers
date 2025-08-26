@@ -327,6 +327,14 @@ module beelievers_mint::mint {
         collection.mint_price = price;
     }
 
+    public entry fun set_premint_completed(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        completed: bool
+    ) {
+        collection.premint_completed = completed;
+    }
+
     public entry fun set_nft_badge(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
