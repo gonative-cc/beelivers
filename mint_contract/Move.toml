@@ -6,7 +6,7 @@ authors = ["@null"]
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
-beelivers_auction = {git = "https://github.com/suibdev/beelievers1.git", subdir = "beelivers_auction", rev= "main" }
+beelivers_auction = {git = "https://github.com/gonative-cc/beelivers.git", subdir = "beelivers_auction", rev= "main" }
 
 [addresses]
 beelievers_mint = "0x0"

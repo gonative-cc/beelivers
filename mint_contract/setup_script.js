@@ -29,26 +29,26 @@ const CONFIGS = {
         DELAY_BETWEEN_BATCHES: 2000,
         TOTAL_NFTS: 5, // Test with first 5 NFTs only
         PREMINT_RANGE: 5, // Test premint range
-        MINT_START_TIME: 1744088400000
+        MINT_START_TIME: 1744088400000 //timestamp ms
     },
     production: {
-        PACKAGE_ID: '0xYOUR_PRODUCTION_PACKAGE_ID', // Replace with production package ID
-        ADMIN_CAP: '0xYOUR_PRODUCTION_ADMIN_CAP', // Replace with production admin cap
-        COLLECTION_ID: '0xYOUR_PRODUCTION_COLLECTION_ID', // Replace with production collection ID
-        TRANSFER_POLICY_ID: '0xYOUR_PRODUCTION_TRANSFER_POLICY_ID', // Replace with production transfer policy ID
-        AUCTION_CONTRACT: '0xYOUR_PRODUCTION_AUCTION_CONTRACT', // Replace with production auction contract
+        PACKAGE_ID: '', // Replace with production package ID
+        ADMIN_CAP: '', // Replace with production admin cap
+        COLLECTION_ID: '', // Replace with production collection ID
+        TRANSFER_POLICY_ID: '', // Replace with production transfer policy ID
+        AUCTION_CONTRACT: '0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704', // Replace with production auction contract
         RPC_URL: 'https://fullnode.mainnet.sui.io:443',
         BATCH_SIZE: 50,
         DELAY_BETWEEN_BATCHES: 5000,
         TOTAL_NFTS: 6021, // Full collection
         PREMINT_RANGE: 210, // Full premint range
-        MINT_START_TIME: 1744088400000 
+        MINT_START_TIME: 1744088400000   //timestamp ms
     }
 };
 
 const CONFIG = CONFIGS[ENVIRONMENT];
 const MODULE_NAME = 'mint';
-const ADMIN_PRIVATE_KEY = 'suiprivkeyxxxxx'; // Replace with your private key
+const ADMIN_PRIVATE_KEY = 'suiprivkeyxxxx'; // Replace with your private key
 
 // Enhanced logging with environment and timestamps
 function log(message, type = 'INFO') {
@@ -77,9 +77,7 @@ async function addTestPartners() {
     const { client, signer } = getClientAndSigner();
 
     const testPartners = [
-        '0x1234567890123456789012345678901234567890123456789012345678901234',
-        '0x2345678901234567890123456789012345678901234567890123456789012345',
-        '0x3456789012345678901234567890123456789012345678901234567890123456'
+        '0xa3585953487cf72b94233df0895ae7f6bb05c873772f6ad956dac9cafb946d5d',
     ];
 
     const txb = new TransactionBlock();
@@ -127,26 +125,53 @@ async function addProductionPartners() {
 
         log(`Found ${partners.length} partners to add`, 'INFO');
 
-        const txb = new TransactionBlock();
-        txb.setGasBudget(1000000000);
+        const PARTNER_BATCH_SIZE = 50;
+        let totalProcessed = 0;
 
-        txb.moveCall({
-            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
-            arguments: [
-                txb.object(CONFIG.ADMIN_CAP),
-                txb.object(CONFIG.COLLECTION_ID),
-                txb.pure(partners),
-            ],
-        });
+        for (let i = 0; i < partners.length; i += PARTNER_BATCH_SIZE) {
+            const batchEnd = Math.min(i + PARTNER_BATCH_SIZE, partners.length);
+            const batchPartners = partners.slice(i, batchEnd);
+            
+            log(`Processing partners batch ${i + 1}-${batchEnd} (${batchPartners.length} partners)`, 'INFO');
 
-        const result = await client.signAndExecuteTransactionBlock({
-            signer,
-            transactionBlock: txb,
-            options: { showEffects: true }
-        });
-        log(`Successfully added ${partners.length} partners`, 'SUCCESS');
-        log(`Transaction digest: ${result.digest}`, 'INFO');
-        return result;
+            const txb = new TransactionBlock();
+            txb.setGasBudget(1000000000);
+
+            txb.moveCall({
+                target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
+                arguments: [
+                    txb.object(CONFIG.ADMIN_CAP),
+                    txb.object(CONFIG.COLLECTION_ID),
+                    txb.pure(batchPartners),
+                ],
+            });
+
+            try {
+                const result = await client.signAndExecuteTransactionBlock({
+                    signer,
+                    transactionBlock: txb,
+                    options: { showEffects: true }
+                });
+                
+                totalProcessed += batchPartners.length;
+                log(`Successfully added ${batchPartners.length} partners in current batch`, 'SUCCESS');
+                log(`Progress: ${totalProcessed}/${partners.length} partners processed`, 'INFO');
+                log(`Transaction digest: ${result.digest}`, 'INFO');
+                
+                // Add delay between batches to avoid rate limiting
+                if (batchEnd < partners.length) {
+                    log("Waiting 5 seconds before next batch...", 'INFO');
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+                
+            } catch (error) {
+                log(`Error processing partners batch ${i + 1}-${batchEnd}: ${error.message}`, 'ERROR');
+                throw error;
+            }
+        }
+
+        log(`Successfully added all ${totalProcessed} partners in batches`, 'SUCCESS');
+        return { totalProcessed };
     } catch (error) {
         log(`Error adding partners: ${error.message}`, 'ERROR');
         throw error;
@@ -530,7 +555,7 @@ async function executePremint() {
             log(`Executing premint batch ${startId}-${endId}...`, 'INFO');
             
             const tx2 = new TransactionBlock();
-            tx2.setGasBudget(1000000000); 
+            tx2.setGasBudget(10000000000); //10 sui budget
 
             tx2.moveCall({
                 target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
