@@ -19,10 +19,10 @@ const SKIP_MINTING = process.argv.includes('--skip-minting');
 // Environment-specific configurations
 const CONFIGS = {
     test: {
-        PACKAGE_ID: '0xada75092e6cecd4ddb31c328b31e6d5beea6860068e9ba32fe27560027faaa2f',
-        ADMIN_CAP: '0xce8c355459dd0f44117608f4a282ab63c70dcba10ca596265e473353bdee435a',
-        COLLECTION_ID: '0xa1d6b6eb06c27186ebb193704896d5f706e0437f11779483feb81658759df0d6',
-        TRANSFER_POLICY_ID: '0x9f963968ec33326fd4de2f86e64538e63013f7f4120c1553cb2dc9f0ed9917c6',
+        PACKAGE_ID: '0xcb54e2ee9ec3cc841b086ae890cdfc38b1817f6348be2790782d3472dfeea351',
+        ADMIN_CAP: '0x99a056c5c1db0aa0d39bcd03dc87f52b7b160e8b172a867536e3fc646929240f',
+        COLLECTION_ID: '0x5c76dfc4baa0e40aa0bd543cce4061b7402ba48b273117ed28211452a9ff6cd6',
+        TRANSFER_POLICY_ID: '0x30ca00bdae2803beb838c4d1c8353cb120ce48d1802e6341b1850cfc24a76fbd',
         AUCTION_CONTRACT: '0x345c10a69dab4ba85be56067c94c4a626c51e297b884e43b113d3eb99ed7a0f3',
         RPC_URL: 'https://fullnode.testnet.sui.io:443',
         BATCH_SIZE: 5,
@@ -36,7 +36,7 @@ const CONFIGS = {
         ADMIN_CAP: '', // Replace with production admin cap
         COLLECTION_ID: '', // Replace with production collection ID
         TRANSFER_POLICY_ID: '', // Replace with production transfer policy ID
-        AUCTION_CONTRACT: '0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704', // Replace with production auction contract
+        AUCTION_CONTRACT: '0x345c10a69dab4ba85be56067c94c4a626c51e297b884e43b113d3eb99ed7a0f3', // Replace with production auction contract
         RPC_URL: 'https://fullnode.mainnet.sui.io:443',
         BATCH_SIZE: 50,
         DELAY_BETWEEN_BATCHES: 5000,
@@ -78,6 +78,7 @@ async function addTestPartners() {
 
     const testPartners = [
         '0xa3585953487cf72b94233df0895ae7f6bb05c873772f6ad956dac9cafb946d5d',
+        '0x9728ec13d7321c7ee46669454e6d49857cc29fed09ba13696af7692c55e61a24'
     ];
 
     const txb = new TransactionBlock();
@@ -662,6 +663,197 @@ async function startMinting() {
     }
 }
 
+// Test minting (for testing after deployment)
+async function testMinting() {
+    const { client, signer } = getClientAndSigner();
+
+    log("Testing minting functionality...", 'INFO');
+    
+    // Set mint start time to now (immediate)
+    const startTime = Math.floor(Date.now() / 1000);
+    
+    log(`Setting mint start time to now: ${startTime}`, 'INFO');
+    log(`Minting will start at: ${new Date(startTime * 1000).toISOString()}`, 'INFO');
+
+    const txb = new TransactionBlock();
+    txb.setGasBudget(1000000000);
+
+    txb.moveCall({
+        target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::start_minting`,
+        arguments: [
+            txb.object(CONFIG.ADMIN_CAP),
+            txb.object(CONFIG.COLLECTION_ID),
+            txb.pure(startTime),
+        ],
+    });
+
+    try {
+        const result = await client.signAndExecuteTransactionBlock({
+            signer,
+            transactionBlock: txb,
+            options: { showEffects: true }
+        });
+        log("Successfully started minting for testing", 'SUCCESS');
+        log(`Transaction digest: ${result.digest}`, 'INFO');
+        
+        // Wait a moment then check collection stats
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        await checkCollectionStats();
+        
+        // Now try to actually mint an NFT
+        await performTestMint();
+        
+        return result;
+    } catch (error) {
+        log(`Error starting minting: ${error.message}`, 'ERROR');
+        throw error;
+    }
+}
+
+// Perform actual test mint
+async function performTestMint() {
+    const { client, signer } = getClientAndSigner();
+    const kioskClient = new KioskClient({ url: CONFIG.RPC_URL });
+
+    log("Performing actual test mint...", 'INFO');
+
+    try {
+        // Step 1: Create kiosk
+        log("Creating kiosk for test mint...", 'INFO');
+        const tx1 = new TransactionBlock();
+        tx1.setGasBudget(1000000000);
+        const kioskTx = new KioskTransaction({ transaction: tx1, kioskClient });
+
+        kioskTx.create();
+        kioskTx.shareAndTransferCap(signer.getPublicKey().toSuiAddress());
+        kioskTx.finalize();
+
+        const result1 = await client.signAndExecuteTransactionBlock({
+            signer,
+            transactionBlock: tx1,
+            options: { showEffects: true }
+        });
+
+        log("Kiosk creation successful", 'SUCCESS');
+        log(`Kiosk transaction digest: ${result1.digest}`, 'INFO');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Get kiosk and cap IDs
+        const txEffects = await client.getTransactionBlock({
+            digest: result1.digest,
+            options: { showEffects: true, showInput: true },
+        });
+
+        let kioskId, kioskCapId;
+        txEffects.effects.created.forEach(obj => {
+            if (obj.owner.Shared) {
+                kioskId = obj.reference.objectId;
+            } else if (obj.owner.AddressOwner === signer.getPublicKey().toSuiAddress()) {
+                kioskCapId = obj.reference.objectId;
+            }
+        });
+
+        if (!kioskId || !kioskCapId) {
+            throw new Error('Failed to retrieve kiosk or kiosk cap ID');
+        }
+
+        log(`Kiosk ID: ${kioskId}`, 'INFO');
+        log(`Kiosk Cap ID: ${kioskCapId}`, 'INFO');
+
+        // Step 2: Perform the actual mint
+        log("Attempting to mint NFT...", 'INFO');
+        const tx2 = new TransactionBlock();
+        tx2.setGasBudget(1000000000); // 1 SUI budget
+
+        // Create a zero SUI coin for payment (since mint_price is 0)
+        const [coin] = tx2.splitCoins(tx2.gas, [tx2.pure(0)]);
+
+        tx2.moveCall({
+            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::mint`,
+            arguments: [
+                tx2.object(CONFIG.COLLECTION_ID),
+                coin, // payment
+                tx2.object(CONFIG.TRANSFER_POLICY_ID),
+                tx2.object("0x8"), // random
+                tx2.object("0x6"), // clock
+                tx2.object(CONFIG.AUCTION_CONTRACT), // auction contract
+                tx2.object(kioskId),
+                tx2.object(kioskCapId),
+            ],
+        });
+
+        const result2 = await client.signAndExecuteTransactionBlock({
+            signer,
+            transactionBlock: tx2,
+            options: { showEffects: true }
+        });
+
+        log("🎉 Test mint successful!", 'SUCCESS');
+        log(`Mint transaction digest: ${result2.digest}`, 'INFO');
+        
+        // Check what was minted
+        if (result2.effects && result2.effects.created) {
+            result2.effects.created.forEach(obj => {
+                if (obj.owner.AddressOwner === signer.getPublicKey().toSuiAddress()) {
+                    log(`Minted object: ${obj.reference.objectId}`, 'INFO');
+                }
+            });
+        }
+
+        // Wait and check updated stats
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        await checkCollectionStats();
+
+        return result2;
+    } catch (error) {
+        log(`Error performing test mint: ${error.message}`, 'ERROR');
+        throw error;
+    }
+}
+
+// Check collection stats
+async function checkCollectionStats() {
+    const { client } = getClientAndSigner();
+
+    try {
+        log("Checking collection stats...", 'INFO');
+        
+        const txb = new TransactionBlock();
+        txb.setGasBudget(1000000000);
+
+        txb.moveCall({
+            target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::get_collection_stats`,
+            arguments: [
+                txb.object(CONFIG.COLLECTION_ID),
+            ],
+        });
+
+        const result = await client.dryRunTransactionBlock({
+            transactionBlock: txb,
+        });
+
+        if (result.results && result.results.length > 0) {
+            const returnValues = result.results[0].returnValues;
+            if (returnValues && returnValues.length >= 5) {
+                const totalMinted = parseInt(returnValues[0]);
+                const mythicMinted = parseInt(returnValues[1]);
+                const normalMinted = parseInt(returnValues[2]);
+                const availableMythics = parseInt(returnValues[3]);
+                const availableNormals = parseInt(returnValues[4]);
+                
+                log(`📊 Collection Stats:`, 'INFO');
+                log(`   Total Minted: ${totalMinted}`, 'INFO');
+                log(`   Mythics Minted: ${mythicMinted}`, 'INFO');
+                log(`   Normals Minted: ${normalMinted}`, 'INFO');
+                log(`   Available Mythics: ${availableMythics}`, 'INFO');
+                log(`   Available Normals: ${availableNormals}`, 'INFO');
+            }
+        }
+    } catch (error) {
+        log(`Error checking collection stats: ${error.message}`, 'WARNING');
+    }
+}
+
 // Run complete setup
 async function runCompleteSetup() {
     log(`🚀 Starting Beelievers ${ENVIRONMENT.toUpperCase()} Setup...`, 'INFO');
@@ -744,13 +936,14 @@ log(`Mint Start Time: ${new Date(CONFIG.MINT_START_TIME).toISOString()} (${CONFI
 async function main() {
     const operation = process.argv[2];
 
-    if (!operation || (operation !== 'test' && operation !== 'production')) {
+    if (!operation || (operation !== 'test' && operation !== 'production' && operation !== 'test-minting')) {
         log(`
 🏭 Beelievers Complete Setup Script
 
 Usage:
   Test Setup:        node setup_script.js test
   Production Setup:  node setup_script.js production
+  Test Minting:      node setup_script.js test-minting
 
 Options:
   --skip-premint     Skip the premint process
@@ -761,6 +954,12 @@ Examples:
   node setup_script.js production
   node setup_script.js test --skip-premint
   node setup_script.js production --skip-minting
+  node setup_script.js test-minting
+
+Commands:
+  test              - Run complete test setup (partners, badges, attributes, URLs, premint, minting)
+  production        - Run complete production setup (partners, badges, attributes, URLs, premint, minting)
+  test-minting      - Test minting functionality only (starts minting immediately)
 
 Required Files:
   - badges.json: Token ID to badge mapping
@@ -795,7 +994,12 @@ Mint Start Time Configuration:
     }
 
     try {
-        await runCompleteSetup();
+        if (operation === 'test-minting') {
+            log("🧪 Testing minting functionality...", 'INFO');
+            await testMinting();
+        } else {
+            await runCompleteSetup();
+        }
     } catch (error) {
         log(`Script execution failed: ${error.message}`, 'ERROR');
         process.exit(1);

@@ -77,7 +77,7 @@ module beelievers_mint::mint {
         premint_completed: bool,
         minting_active: bool,
         mint_start_time: u64,
-        auction_contract: address,
+
         treasury_address: address,
         mint_price: u64,
         nft_metadata: Table<u64, VecMap<String, String>>,
@@ -111,7 +111,7 @@ module beelievers_mint::mint {
             partner_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_partners: 0, 
-            auction_contract: @0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704,
+
             treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
             mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
@@ -309,14 +309,6 @@ module beelievers_mint::mint {
         collection: &mut BeelieversCollection
     ) {
         collection.minting_active = false;
-    }
-
-    public entry fun set_auction_contract(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        auction_address: address
-    ) {
-        collection.auction_contract = auction_address;
     }
 
     public entry fun set_treasury(
@@ -602,9 +594,6 @@ module beelievers_mint::mint {
         assert!(!has_minted(collection, sender), ERROR_ALREADY_MINTED);
         assert!(collection.total_minted < TOTAL_SUPPLY, ERROR_INSUFFICIENT_SUPPLY);
         
-        // Validate that the auction contract matches the authorized one
-        assert!(object::id(auction) == collection.auction_contract, ERROR_UNAUTHORIZED);
-
         if (collection.mint_price > 0) {
             assert!(coin::value(&payment) >= collection.mint_price, ERROR_INSUFFICIENT_PAYMENT);
         };
