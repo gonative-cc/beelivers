@@ -14,6 +14,8 @@ module beelievers_mint::mint {
     use sui::kiosk;
     use sui::vec_map::{Self, VecMap};
     use sui::object::{Self, UID};
+    use sui::tx_context::{Self, TxContext};
+    use sui::transfer;
 
     use beelivers_auction::auction::{Self, Auction};
 
@@ -609,17 +611,19 @@ module beelievers_mint::mint {
         let (is_eligible, is_mythic) = determine_mint_eligibility(collection, sender, random, auction, ctx);
         assert!(is_eligible, ERROR_UNAUTHORIZED);
 
-        let token_id = if (is_mythic) {
-            assert!(collection.mythic_minted < MYTHIC_SUPPLY, ERROR_NO_MYTHICS_AVAILABLE);
+       let mut minted_mythic = is_mythic;
+
+    let token_id = if (is_mythic) {
+        assert!(collection.mythic_minted < MYTHIC_SUPPLY, ERROR_NO_MYTHICS_AVAILABLE);
+        select_random_mythic(collection, random, ctx)
+    } else {
+        if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
+            minted_mythic = true;
             select_random_mythic(collection, random, ctx)
         } else {
-            // Auction winners try normal first, fall back to mythic if normals are exhausted
-            if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
-                select_random_mythic(collection, random, ctx)
-            } else {
-                select_random_normal(collection, random, ctx)
-            }
-        };
+            select_random_normal(collection, random, ctx)
+        }
+    };
 
         let badges = if (table::contains(&collection.nft_badges, token_id)) {
             *table::borrow(&collection.nft_badges, token_id)
@@ -631,7 +635,7 @@ module beelievers_mint::mint {
         let nft_id = object::id(&nft);
 
         collection.total_minted = collection.total_minted + 1;
-        if (is_mythic) {
+        if (minted_mythic) {
             collection.mythic_minted = collection.mythic_minted + 1;
         } else {
             collection.normal_minted = collection.normal_minted + 1;
