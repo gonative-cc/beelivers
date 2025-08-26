@@ -542,55 +542,72 @@ async function executePremint() {
             throw new Error('Failed to retrieve kiosk or kiosk cap ID');
         }
 
-        // Execute premint in batches
+        // Execute premint in specific ranges
         const PREMINT_BATCH_SIZE = 20;
-        const totalPremint = CONFIG.PREMINT_RANGE;
         let completedPremint = 0;
+        let totalPremint = 0;
 
-        log(`Starting premint process for NFTs #1-${totalPremint} in batches of ${PREMINT_BATCH_SIZE}...`, 'INFO');
+        // Define premint ranges: 1-10 (mythics), skip 11-21, then 22-221 (normals)
+        const premintRanges = [
+            { start: 1, end: 10, description: "First 10 mythics" },
+            { start: 22, end: 221, description: "200 normal NFTs after mythics" }
+        ];
 
-        for (let startId = 1; startId <= totalPremint; startId += PREMINT_BATCH_SIZE) {
-            const endId = Math.min(startId + PREMINT_BATCH_SIZE - 1, totalPremint);
+        // Calculate total NFTs to premint
+        premintRanges.forEach(range => {
+            totalPremint += (range.end - range.start + 1);
+        });
+
+        log(`Starting premint process for ${totalPremint} NFTs in specific ranges...`, 'INFO');
+        log(`Ranges: 1-10 (mythics), skip 11-21, then 22-221 (normals)`, 'INFO');
+
+        for (const range of premintRanges) {
+            log(`Processing range ${range.start}-${range.end}: ${range.description}`, 'INFO');
             
-            log(`Executing premint batch ${startId}-${endId}...`, 'INFO');
-            
-            const tx2 = new TransactionBlock();
-            tx2.setGasBudget(10000000000); //10 sui budget
+            // Process each range in batches
+            for (let startId = range.start; startId <= range.end; startId += PREMINT_BATCH_SIZE) {
+                const endId = Math.min(startId + PREMINT_BATCH_SIZE - 1, range.end);
+                
+                log(`Executing premint batch ${startId}-${endId}...`, 'INFO');
+                
+                const tx2 = new TransactionBlock();
+                tx2.setGasBudget(10000000000); //10 sui budget
 
-            tx2.moveCall({
-                target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
-                arguments: [
-                    tx2.object(CONFIG.ADMIN_CAP),
-                    tx2.object(CONFIG.COLLECTION_ID),
-                    tx2.object(CONFIG.TRANSFER_POLICY_ID),
-                    tx2.object(kioskId),
-                    tx2.object(kioskCapId),
-                    tx2.pure(startId), 
-                    tx2.pure(endId),
-                ],
-            });
-
-            try {
-                const result2 = await client.signAndExecuteTransactionBlock({
-                    signer,
-                    transactionBlock: tx2,
-                    options: { showEffects: true }
+                tx2.moveCall({
+                    target: `${CONFIG.PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
+                    arguments: [
+                        tx2.object(CONFIG.ADMIN_CAP),
+                        tx2.object(CONFIG.COLLECTION_ID),
+                        tx2.object(CONFIG.TRANSFER_POLICY_ID),
+                        tx2.object(kioskId),
+                        tx2.object(kioskCapId),
+                        tx2.pure(startId), 
+                        tx2.pure(endId),
+                    ],
                 });
-                
-                completedPremint += (endId - startId + 1);
-                log(`Premint batch ${startId}-${endId} successful`, 'SUCCESS');
-                log(`Progress: ${completedPremint}/${totalPremint} NFTs preminted`, 'INFO');
-                log(`Batch transaction digest: ${result2.digest}`, 'INFO');
-                
-                // Add delay between batches
-                if (endId < totalPremint) {
-                    log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                    await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+
+                try {
+                    const result2 = await client.signAndExecuteTransactionBlock({
+                        signer,
+                        transactionBlock: tx2,
+                        options: { showEffects: true }
+                    });
+                    
+                    completedPremint += (endId - startId + 1);
+                    log(`Premint batch ${startId}-${endId} successful`, 'SUCCESS');
+                    log(`Progress: ${completedPremint}/${totalPremint} NFTs preminted`, 'INFO');
+                    log(`Batch transaction digest: ${result2.digest}`, 'INFO');
+                    
+                                        // Add delay between batches
+                    if (endId < range.end || range !== premintRanges[premintRanges.length - 1]) {
+                        log(`Waiting ${CONFIG.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
+                        await new Promise(resolve => setTimeout(resolve, CONFIG.DELAY_BETWEEN_BATCHES));
+                    }
+                    
+                } catch (error) {
+                    log(`Error executing premint batch ${startId}-${endId}: ${error.message}`, 'ERROR');
+                    throw error;
                 }
-                
-            } catch (error) {
-                log(`Error executing premint batch ${startId}-${endId}: ${error.message}`, 'ERROR');
-                throw error;
             }
         }
 
