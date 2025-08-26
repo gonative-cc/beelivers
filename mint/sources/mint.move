@@ -31,6 +31,7 @@ const ERROR_INVALID_TOKEN_ID: u64 = 7;
 const ERROR_PREMINT_NOT_COMPLETED: u64 = 8;
 const ERROR_NO_MYTHICS_AVAILABLE: u64 = 9;
 const ERROR_INVALID_RANGE: u64 = 10;
+const EWrongAuctionId: u64 = 11;
 
 public struct NFTMinted has copy, drop {
     nft_id: object::ID,
@@ -575,6 +576,7 @@ public entry fun mint(
     assert!(current_time >= collection.mint_start_time, ERROR_MINTING_NOT_ACTIVE);
     assert!(!has_minted(collection, sender), ERROR_ALREADY_MINTED);
     assert!(collection.total_minted < TOTAL_SUPPLY, ERROR_INSUFFICIENT_SUPPLY);
+    assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionId);
 
     if (collection.mint_price > 0) {
         assert!(coin::value(&payment) >= collection.mint_price, ERROR_INSUFFICIENT_PAYMENT);
