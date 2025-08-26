@@ -2,7 +2,7 @@
 name = "beelivers_auction"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 license = "MPL-2.0"
-published-at = "0xbad048cf3c9ef2f17ced6c6d03f86c5721fde22093e5a27a8c9c77acbd3be0c3"
+published-at = "0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704"
 authors = ["Native"]
 
 [dependencies]
@@ -21,7 +21,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-beelivers_auction = "0xbad048cf3c9ef2f17ced6c6d03f86c5721fde22093e5a27a8c9c77acbd3be0c3"
+beelivers_auction = "0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.

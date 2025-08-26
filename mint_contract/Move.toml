@@ -10,7 +10,7 @@ beelivers_auction = {git = "https://github.com/gonative-cc/beelivers.git", subdi
 
 [addresses]
 beelievers_mint = "0x0"
-beelivers_auction = "0xbad048cf3c9ef2f17ced6c6d03f86c5721fde22093e5a27a8c9c77acbd3be0c3"
+beelivers_auction = "0xff4982cd449809676699d1a52c5562fc15b9b92cb41bde5f8845a14647186704"
 
 [dev-dependencies]
 
