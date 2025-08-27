@@ -75,3 +75,4 @@ contrib/scripts/*.json
 
 .trace
 .coverage*
+.DS_Store
