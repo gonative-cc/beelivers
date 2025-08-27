@@ -4,6 +4,35 @@ Beelivers BTCFi activation and NFT auction
 
 ## Deployed objects & packages
 
+### BTCFi Beelievers NFT auction
+
+Auction ID: `0x161524be15687cca96dec58146568622458905c30479452351f231cac5d64c41`.
+Package ID: `0x1b4cbd991bb7e31ff60b6685bcfef6c9c724bc04a6daabb7c815eae0213001ea`.
+
+Finalize Winners Txs:
+
+- 🔗 Digest: `2qaXamvaKefqHV3aetUkhPPZhW4iSBgRYhZ26hAjtanC`
+- 🔗 Digest: `6XDAhqduUDNcurjV4qFHUTQxtCrRR96Kdk4ogqe8P4uH`
+- 🔗 Digest: `Bke6d8QpEmZgCJnWeFsPwbfHPBxXu5ismUQgtgHZuaon`
+- 🔗 Digest: `B8vD2YtrFhPDPmVQFM2QNNGJF9NzdN95BJvwdL7txS55`
+- 🔗 Digest: `8tFvGUVtnccPyBccihG537UJ17Xupg1JvAZnJURBgZRV`
+- 🔗 Digest: `FPvAcKL1D4AjtKBbG3r2QsH7oE18K4CbMpfxjjYEKvzC`
+- 🔗 Digest: `CRSSgoDGyKAEzKQatTQaSuYcBAhVWLutzboFDh93WYHZ`
+- 🔗 Digest: `5KHkVmvyCTDHdYexxJtMF7pqTZs85j94hRtGVoydTSXg`
+- 🔗 Digest: `3wbxRtuBskfws6dELz3QpwiGv4u4h7SeqBJwtA1cLRm7`
+- 🔗 Digest: `BwdFpxxcJXxrCfc7bfJE2wtJnzupCgmFattbRAoA9J5d`
+- 🔗 Digest: `3tL1HQeDpss87PEmsMKhf2EPsQyhTpr6hBi1UDgMUFEx`
+- 🔗 Digest: `9qKNMTkRLYzYEEc1DCfo1rG3vSF7tx1J72TbHDsNsUtH`
+
+Raffle:
+
+- 🔗 Digest: `6DsEZJ7AtyZ4QanoH4iw3QA5NpcfFvWA98AAJxk1wYea`
+- Winners - see [tx event](https://suivision.xyz/txblock/6DsEZJ7AtyZ4QanoH4iw3QA5NpcfFvWA98AAJxk1wYea?tab=Events).
+
+Finalize Auction Tx and collecting reward:
+
+- 🔗 Digest: `E6PBgp5jA6vMs3rzS32nRseUiEBkDxf7WXjdsU6pL6Rz`, [event](https://suivision.xyz/txblock/E6PBgp5jA6vMs3rzS32nRseUiEBkDxf7WXjdsU6pL6Rz?tab=Events).
+
 ## Contributing
 
 Participating in open source is often a highly collaborative experience. We’re encouraged to create in public view, and we’re incentivized to welcome contributions of all kinds from people around the world.
