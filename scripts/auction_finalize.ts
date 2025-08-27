@@ -179,10 +179,18 @@ async function finalizeEnd(client: SuiClient, keypair: Ed25519Keypair, acfg: Auc
 	if (acfg.clearingPrice < 1e9) {
 		throw new Error("Invalid clearing price");
 	}
+	if (acfg.discounts < 0) {
+		throw new Error("discounts must be postive");
+	}
 
 	txn.moveCall({
 		target: `${acfg.packageId}::auction::finalize_end`,
-		arguments: [adminCap, auction, txn.pure("u64", acfg.clearingPrice)],
+		arguments: [
+			adminCap,
+			auction,
+			txn.pure("u64", acfg.clearingPrice),
+			txn.pure("u64", acfg.discounts),
+		],
 	});
 
 	const result = await client.signAndExecuteTransaction({

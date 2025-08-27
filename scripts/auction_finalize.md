@@ -33,14 +33,15 @@ Set the winner list to auction
 bun ./build/beelievers_auction_finalize.js set-winners data.txt
 ```
 
+Finalize the auction with clearing price set in the auction.config.ts.
+Before running, double check if you need to specify `discounts` in the config.
+
+```bash
+bun ./build/beelievers_auction_finalize.js finalize
+```
+
 Run Ruffle
 
 ```bash
 bun ./build/beelievers_auction_finalize.js raffle
-```
-
-Finalize the auction with clearing price set in the auction.config.ts
-
-```bash
-bun ./build/beelievers_auction_finalize.js finalize
 ```

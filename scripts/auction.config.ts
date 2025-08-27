@@ -3,6 +3,7 @@ export type AuctionConf = {
 	auctionId: string;
 	adminCapId: string;
 	clearingPrice: number;
+	discounts: number; // see finalize_end function docs
 	startMs: number;
 	durationMs: number;
 	auctionSize: number;
@@ -15,6 +16,7 @@ export const auctionConfMainnet: AuctionConf = {
 	auctionId: "0x161524be15687cca96dec58146568622458905c30479452351f231cac5d64c41",
 	adminCapId: "0xe0b2e857aaa3120b7c4e3f2e5f5073e2b603719bbfcdcd0ce8e138b49922f27c",
 	clearingPrice: 5260500000,
+	discounts: 0,
 	network: "mainnet",
 	startMs: 0,
 	durationMs: 0,
@@ -27,6 +29,7 @@ export const auctionConfTestnet: AuctionConf = {
 	auctionId: "",
 	adminCapId: "",
 	clearingPrice: 0,
+	discounts: 1e9,
 	network: "testnet",
 	startMs: 0,
 	durationMs: 0,
