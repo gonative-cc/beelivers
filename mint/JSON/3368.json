@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #3368",
+  "description": "A unique Beeliever from the Wind family",
+  "image": "3368.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Right"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Closed"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Hair"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Sui Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Mint"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "3368.png"
+      }
+    ],
+    "category": "image"
+  }
+}

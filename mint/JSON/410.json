@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #410",
+  "description": "A unique Beeliever from the Sending Love family",
+  "image": "410.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Sending Love"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Cap"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Bitcoin Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Mint"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "410.png"
+      }
+    ],
+    "category": "image"
+  }
+}

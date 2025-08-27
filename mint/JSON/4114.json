@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #4114",
+  "description": "A unique Beeliever from the Idea family",
+  "image": "4114.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Idea"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Smile"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Bitcoin Logo"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "None"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Yellow"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "4114.png"
+      }
+    ],
+    "category": "image"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #1828",
+  "description": "A unique Beeliever from the Minecraft family",
+  "image": "1828.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Minecraft"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Down"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Line Straight"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Hearts"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Hat/Helmet"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Green"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "1828.png"
+      }
+    ],
+    "category": "image"
+  }
+}

@@ -155,12 +155,7 @@ fun assert_is_active(auction: &Auction, clock: &Clock) {
 
 /// Place a bid or increase existing bid.
 /// Returns total amount bid by the user.
-public fun bid(
-    auction: &mut Auction,
-    payment: Coin<SUI>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): u64 {
+public fun bid(auction: &mut Auction, payment: Coin<SUI>, clock: &Clock, ctx: &mut TxContext): u64 {
     auction.assert_is_active(clock);
     let bidder = tx_context::sender(ctx);
     let bid_amount = coin::value(&payment);
@@ -267,7 +262,7 @@ public entry fun run_raffle(
     ctx: &mut TxContext,
 ): vector<address> {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EAlreadyFinalized);
+    assert!(auction.finalized, ENotFinalized);
     assert!(!auction.raffle_done, ERaffleAlreadyDone);
     auction.raffle_done = true;
 
@@ -323,11 +318,7 @@ public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
 }
 
 #[allow(lint(self_transfer))]
-public fun emergency_withdraw(
-    admin_cap: &AdminCap,
-    auction: &mut Auction,
-    ctx: &mut TxContext,
-) {
+public fun emergency_withdraw(admin_cap: &AdminCap, auction: &mut Auction, ctx: &mut TxContext) {
     assert!(auction.paused, ENotPause);
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     let total_fund = auction.vault.value();

@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #2121",
+  "description": "A unique Beeliever from the Super Simple family",
+  "image": "2121.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Super Simple"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Open"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "None"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "None"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Emerald"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "2121.png"
+      }
+    ],
+    "category": "image"
+  }
+}

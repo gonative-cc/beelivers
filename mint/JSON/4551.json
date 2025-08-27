@@ -1,0 +1,48 @@
+{
+  "name": "Beeliever #4551",
+  "description": "A unique Beeliever from the Sending Love family",
+  "image": "4551.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Normal"
+    },
+    {
+      "trait_type": "Family",
+      "value": "Sending Love"
+    },
+    {
+      "trait_type": "Side Appearance",
+      "value": "Left"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Glasses"
+    },
+    {
+      "trait_type": "Lips",
+      "value": "Tongue"
+    },
+    {
+      "trait_type": "Attribute 1",
+      "value": "Music Headphones"
+    },
+    {
+      "trait_type": "Attribute 2",
+      "value": "Sui Logo"
+    },
+    {
+      "trait_type": "Background",
+      "value": "White"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "type": "image/png",
+        "uri": "4551.png"
+      }
+    ],
+    "category": "image"
+  }
+}
