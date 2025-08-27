@@ -155,20 +155,13 @@ fun assert_is_active(auction: &Auction, clock: &Clock) {
 
 /// Place a bid or increase existing bid.
 /// Returns total amount bid by the user.
-public fun bid(
-    auction: &mut Auction,
-    payment: Coin<SUI>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-): u64 {
+public fun bid(auction: &mut Auction, payment: Coin<SUI>, clock: &Clock, ctx: &mut TxContext): u64 {
     auction.assert_is_active(clock);
     let bidder = tx_context::sender(ctx);
     let bid_amount = coin::value(&payment);
     assert!(bid_amount > 0, EBidZeroSui);
 
-    // TODO: use can use "method" call
-    // example: auction.vault.join(payment.into_balance())
-    balance::join(&mut auction.vault, coin::into_balance(payment));
+    auction.vault.join(coin::into_balance(payment));
 
     let total = if (table::contains(&auction.bidders, bidder)) {
         let a = &mut auction.bidders[bidder];
@@ -226,11 +219,16 @@ public fun finalize_continue(
     auction.winners.append(winners);
 }
 
+/// * `clearing_price`: the amount of MIST all winners have to pay.
+/// * `discounts`: amount in MIST. Due to offchain logic, some winners may have a discount,
+///    making them pay less than what they bid. This has to be taken into the account, when the
+///    admin takes the rewards.beelivers_auction
 #[allow(lint(self_transfer))]
 public fun finalize_end(
     admin_cap: &AdminCap,
     auction: &mut Auction,
     clearing_price: u64,
+    discounts: u64,
     ctx: &mut TxContext,
 ) {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
@@ -243,7 +241,7 @@ public fun finalize_end(
     let len = auction.winners.length();
     assert!(0 < len && len <= auction.size as u64, EWrongWinnersSize);
 
-    let funds = auction.clearing_price * len;
+    let funds = auction.clearing_price * len - discounts;
     transfer::public_transfer(
         coin::from_balance(auction.vault.split(funds), ctx),
         ctx.sender(),
@@ -256,9 +254,16 @@ public fun finalize_end(
     });
 }
 
+/// Allows anyone to top up coins to the auction in cases of inconsistency with withdraws.
+/// Top up amount is credited to the auction vault and not to the sender.
+#[allow(lint(self_transfer))]
+public fun top_up(auction: &mut Auction, payment: Coin<SUI>) {
+    auction.vault.join(coin::into_balance(payment));
+}
+
 #[allow(lint(public_random))]
 /// returns the raffle winners
-public entry fun run_raffle(
+public fun run_raffle(
     auction: &mut Auction,
     admin_cap: &AdminCap,
     num_winners: u32,
@@ -266,7 +271,7 @@ public entry fun run_raffle(
     ctx: &mut TxContext,
 ): vector<address> {
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
-    assert!(!auction.finalized, EAlreadyFinalized);
+    assert!(auction.finalized, ENotFinalized);
     assert!(!auction.raffle_done, ERaffleAlreadyDone);
     auction.raffle_done = true;
 
@@ -299,6 +304,8 @@ public fun reset_status(admin_cap: &AdminCap, auction: &mut Auction) {
     auction.winners = vector::empty();
 }
 
+// NOTE: entry forces to drop all the return objects
+#[allow(lint(public_entry))]
 /// Allows any user to withdraw their funds after the auction is finalized.
 public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
     assert!(auction.finalized, ENotFinalized);
@@ -322,11 +329,7 @@ public entry fun withdraw(auction: &mut Auction, ctx: &mut TxContext) {
 }
 
 #[allow(lint(self_transfer))]
-public fun emergency_withdraw(
-    admin_cap: &AdminCap,
-    auction: &mut Auction,
-    ctx: &mut TxContext,
-) {
+public fun emergency_withdraw(admin_cap: &AdminCap, auction: &mut Auction, ctx: &mut TxContext) {
     assert!(auction.paused, ENotPause);
     assert!(object::id(admin_cap) == auction.admin_cap_id, ENotAdmin);
     let total_fund = auction.vault.value();
