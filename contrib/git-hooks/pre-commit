@@ -2,7 +2,7 @@
 
 # make lint-git
 
-STAGED_MOVE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.move$')
+STAGED_MOVE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.move$' | grep -v 'mint/')
 
 if [ -z "$STAGED_MOVE_FILES" ]; then
     echo ">>> No Move files to format."
