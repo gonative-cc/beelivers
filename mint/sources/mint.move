@@ -48,11 +48,6 @@ module beelievers_mint::mint {
         timestamp: u64,
     }
 
-    public struct MythicEligibleAdded has copy, drop {
-        address: address,
-    }
-
-
     public struct MintingStarted has copy, drop {
         timestamp: u64,
     }
@@ -112,6 +107,7 @@ module beelievers_mint::mint {
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_mythic_eligible: 0, 
+            //TODO: change to production auction contract
             auction_contract: @0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41,
             treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
             mint_price: 0,
@@ -302,10 +298,6 @@ module beelievers_mint::mint {
             if (!table::contains(&collection.mythic_eligible_list, eligible)) {
                 table::add(&mut collection.mythic_eligible_list, eligible, true);
                 collection.remaining_mythic_eligible = collection.remaining_mythic_eligible + 1;
-                
-                event::emit(MythicEligibleAdded {
-                    address: eligible,
-                });
             };
             
             i = i + 1;
