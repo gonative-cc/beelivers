@@ -10,7 +10,7 @@ beelivers_auction = {git = "https://github.com/suibdev/beelievers1.git", subdir 
 
 [addresses]
 beelievers_mint = "0x0"
-beelivers_auction = "0xbad048cf3c9ef2f17ced6c6d03f86c5721fde22093e5a27a8c9c77acbd3be0c3"
+beelivers_auction = "0xdbf3aaf553b3bc58d2e726d12424eb0ebb761ae62285a55b52011e40653bd4c8"
 
 [dev-dependencies]
 

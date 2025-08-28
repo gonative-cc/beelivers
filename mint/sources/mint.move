@@ -1,3 +1,4 @@
+//@author - null
 #[allow(lint(public_random))]
 module beelievers_mint::mint {
     use sui::clock::{Self, Clock};
@@ -21,21 +22,23 @@ module beelievers_mint::mint {
     const NORMAL_SUPPLY: u64 = 6000;
     const NATIVE_MYTHICS: u64 = 10; 
 
-    const ERROR_INSUFFICIENT_SUPPLY: u64 = 1;
-    const ERROR_MINTING_NOT_ACTIVE: u64 = 2;
-    const ERROR_UNAUTHORIZED: u64 = 3;
-    const ERROR_ALREADY_MINTED: u64 = 4;
-    const ERROR_INSUFFICIENT_PAYMENT: u64 = 5;
-    const ERROR_INVALID_QUANTITY: u64 = 6;
-    const ERROR_INVALID_TOKEN_ID: u64 = 7;
-    const ERROR_PREMINT_NOT_COMPLETED: u64 = 8;
-    const ERROR_NO_MYTHICS_AVAILABLE: u64 = 9;
-    const ERROR_INVALID_RANGE: u64 = 10;
+    const EInsufficientSupply: u64 = 1;
+    const EMintingNotActive: u64 = 2;
+    const EUnauthorized: u64 = 3;
+    const EAlreadyMinted: u64 = 4;
+    const EInsufficientPayment: u64 = 5;
+    const EInvalidQuantity: u64 = 6;
+    const EInvalidTokenId: u64 = 7;
+    const EPremintNotCompleted: u64 = 8;
+    const ENoMythicsAvailable: u64 = 9;
+    const EInvalidRange: u64 = 10;
+    const EPremintAlreadyCompleted: u64 = 11;
+    const EWrongAuctionContract: u64 = 12;
 
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
         token_id: u64,
-        badges: vector<String>,
+        badges: vector<u64>,
         minter: address,
     }
 
@@ -45,7 +48,7 @@ module beelievers_mint::mint {
         timestamp: u64,
     }
 
-    public struct PartnerAdded has copy, drop {
+    public struct MythicEligibleAdded has copy, drop {
         address: address,
     }
 
@@ -67,17 +70,18 @@ module beelievers_mint::mint {
         normal_minted: u64,
         available_mythics: vector<u64>, 
         available_normals: vector<u64>,         
-        partner_list: Table<address, bool>,
+        mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
-        remaining_partners: u64, 
+        remaining_mythic_eligible: u64, 
         premint_completed: bool,
         minting_active: bool,
         mint_start_time: u64,
-
+        auction_contract: address,
         treasury_address: address,
         mint_price: u64,
         nft_metadata: Table<u64, VecMap<String, String>>,
-        nft_badges: Table<u64, vector<String>>,
+        minter_badges: Table<address, vector<u64>>,
+        badge_names: Table<u64, String>,
         displayable_badges: Table<String, bool>,
         preset_urls: Table<u64, Url>,
     }
@@ -91,6 +95,7 @@ module beelievers_mint::mint {
         badges: vector<String>,
     }
 
+    #[allow(lint(share_owned))]
     fun init(witness: MINT, ctx: &mut TxContext) {
         let publisher = package::claim(witness, ctx);
 
@@ -104,14 +109,15 @@ module beelievers_mint::mint {
             premint_completed: false,
             minting_active: false,
             mint_start_time: 0,
-            partner_list: table::new<address, bool>(ctx),
+            mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
-            remaining_partners: 0, 
-
+            remaining_mythic_eligible: 0, 
+            auction_contract: @0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41,
             treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
             mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
-            nft_badges: table::new<u64, vector<String>>(ctx),
+            minter_badges: table::new<address, vector<u64>>(ctx),
+            badge_names: table::new<u64, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
             preset_urls: table::new<u64, Url>(ctx)
         };
@@ -152,11 +158,12 @@ module beelievers_mint::mint {
     fun create_nft(
         collection: &BeelieversCollection,
         token_id: u64,
-        badges: vector<String>,
+        minter: address,
         ctx: &mut TxContext
     ): BeelieverNFT {
         let mut name = string::utf8(b"Beelievers #");
         string::append(&mut name, u64_to_string(token_id));
+        
 
         let attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
             *table::borrow<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)
@@ -164,12 +171,26 @@ module beelievers_mint::mint {
             vec_map::empty<String, String>()
         };
 
-        // Get custom URL if it exists, otherwise use default
         let image_url = if (table::contains<u64, Url>(&collection.preset_urls, token_id)) {
             *table::borrow<u64, Url>(&collection.preset_urls, token_id)
         } else {
             let default_url_string = string::utf8(b"");
             url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
+        };
+
+        let badge_numbers = if (table::contains<address, vector<u64>>(&collection.minter_badges, minter)) {
+            *table::borrow<address, vector<u64>>(&collection.minter_badges, minter)
+        } else {
+            vector::empty<u64>()
+        };
+
+        let mut badges = vector::empty<String>();
+        let mut i = 0;
+        while (i < vector::length(&badge_numbers)) {
+            let badge_num = *vector::borrow(&badge_numbers, i);
+            let badge_name = badge_number_to_name(collection, badge_num);
+            vector::push_back(&mut badges, badge_name);
+            i = i + 1;
         };
 
         BeelieverNFT {
@@ -179,6 +200,14 @@ module beelievers_mint::mint {
             attributes,
             token_id,
             badges,
+        }
+    }
+
+    fun badge_number_to_name(collection: &BeelieversCollection, badge_num: u64): String {
+        if (table::contains(&collection.badge_names, badge_num)) {
+            *table::borrow(&collection.badge_names, badge_num)
+        } else {
+            string::utf8(b"unknown_badge")
         }
     }
 
@@ -204,7 +233,7 @@ module beelievers_mint::mint {
         random: &Random,
         ctx: &mut TxContext
     ): u64 {
-        assert!(!vector::is_empty(&collection.available_mythics), ERROR_NO_MYTHICS_AVAILABLE);
+        assert!(!vector::is_empty(&collection.available_mythics), ENoMythicsAvailable);
 
         let mut generator = random::new_generator(random, ctx);
         let available_length = vector::length(&collection.available_mythics);
@@ -218,7 +247,7 @@ module beelievers_mint::mint {
         random: &Random,
         ctx: &mut TxContext
     ): u64 {
-        assert!(!vector::is_empty(&collection.available_normals), ERROR_INSUFFICIENT_SUPPLY);
+        assert!(!vector::is_empty(&collection.available_normals), EInsufficientSupply);
 
         let mut generator = random::new_generator(random, ctx);
         let available_length = vector::length(&collection.available_normals);
@@ -227,8 +256,8 @@ module beelievers_mint::mint {
         vector::swap_remove(&mut collection.available_normals, random_index)
     }
 
-    fun is_partner(collection: &BeelieversCollection, addr: address): bool {
-        table::contains(&collection.partner_list, addr)
+    fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
+        table::contains(&collection.mythic_eligible_list, addr)
     }
 
     fun has_minted(collection: &BeelieversCollection, addr: address): bool {
@@ -242,40 +271,40 @@ module beelievers_mint::mint {
     ): bool {
         let mut generator = random::new_generator(random, ctx);
         
-        let remaining_partners = count_remaining_partners(collection);
+        let remaining_mythic_eligible = count_remaining_mythic_eligible(collection);
         let remaining_mythics = vector::length(&collection.available_mythics);
         
         if (remaining_mythics == 0) {
             return false
         };
         
-        if (remaining_partners <= remaining_mythics) {
+        if (remaining_mythic_eligible <= remaining_mythics) {
             return true
         };
         
-        let roll = random::generate_u64_in_range(&mut generator, 1, remaining_partners + 1);
+        let roll = random::generate_u64_in_range(&mut generator, 1, remaining_mythic_eligible + 1);
         roll <= remaining_mythics
     }
 
-    fun count_remaining_partners(collection: &BeelieversCollection): u64 {
-        collection.remaining_partners
+    fun count_remaining_mythic_eligible(collection: &BeelieversCollection): u64 {
+        collection.remaining_mythic_eligible
     }
 
-    public entry fun add_partners(
+    public entry fun add_mythic_eligible(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        partners: vector<address>
+        mythic_eligible: vector<address>
     ) {
         let mut i = 0;
-        while (i < vector::length(&partners)) {
-            let partner = *vector::borrow(&partners, i);
+        while (i < vector::length(&mythic_eligible)) {
+            let eligible = *vector::borrow(&mythic_eligible, i);
             
-            if (!table::contains(&collection.partner_list, partner)) {
-                table::add(&mut collection.partner_list, partner, true);
-                collection.remaining_partners = collection.remaining_partners + 1;
+            if (!table::contains(&collection.mythic_eligible_list, eligible)) {
+                table::add(&mut collection.mythic_eligible_list, eligible, true);
+                collection.remaining_mythic_eligible = collection.remaining_mythic_eligible + 1;
                 
-                event::emit(PartnerAdded {
-                    address: partner,
+                event::emit(MythicEligibleAdded {
+                    address: eligible,
                 });
             };
             
@@ -283,14 +312,13 @@ module beelievers_mint::mint {
         };
     }
 
- 
 
     public entry fun start_minting(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         start_time: u64
     ) {
-        assert!(collection.premint_completed, ERROR_PREMINT_NOT_COMPLETED);
+        assert!(collection.premint_completed, EPremintNotCompleted);
         
         collection.minting_active = true;
         collection.mint_start_time = start_time;
@@ -331,50 +359,82 @@ module beelievers_mint::mint {
         collection.premint_completed = completed;
     }
 
-    public entry fun set_nft_badge(
+    public entry fun set_minter_badge(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        token_id: u64,
-        badge: String
+        addr: address,
+        badge: u64
     ) {
-        assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
-
-        if (table::contains(&collection.nft_badges, token_id)) {
-            let mut badges = *table::borrow(&collection.nft_badges, token_id);
+        if (table::contains(&collection.minter_badges, addr)) {
+            let mut badges = *table::borrow(&collection.minter_badges, addr);
             vector::push_back(&mut badges, badge);
-            *table::borrow_mut(&mut collection.nft_badges, token_id) = badges;
+            *table::borrow_mut(&mut collection.minter_badges, addr) = badges;
         } else {
-            let mut badges = vector::empty<String>();
+            let mut badges = vector::empty<u64>();
             vector::push_back(&mut badges, badge);
-            table::add(&mut collection.nft_badges, token_id, badges);
+            table::add(&mut collection.minter_badges, addr, badges);
         };
     }
 
-    public entry fun set_bulk_nft_badges(
+    public entry fun set_bulk_minter_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        token_ids: vector<u64>,
-        badges: vector<vector<String>>
+        addresses: vector<address>,
+        badges: vector<vector<u64>>
     ) {
-        assert!(vector::length(&token_ids) == vector::length(&badges), ERROR_INVALID_QUANTITY);
+        assert!(vector::length(&addresses) == vector::length(&badges), EInvalidQuantity);
 
         let mut index = 0;
-        while (index < vector::length(&token_ids)) {
-            let token_id = *vector::borrow(&token_ids, index);
+        while (index < vector::length(&addresses)) {
+            let addr = *vector::borrow(&addresses, index);
             let badge_list = *vector::borrow(&badges, index);
-            
-            assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
 
-            if (table::contains(&collection.nft_badges, token_id)) {
-                let mut existing_badges = *table::borrow(&collection.nft_badges, token_id);
+            if (table::contains(&collection.minter_badges, addr)) {
+                let mut existing_badges = *table::borrow(&collection.minter_badges, addr);
                 let mut i = 0;
                 while (i < vector::length(&badge_list)) {
                     vector::push_back(&mut existing_badges, *vector::borrow(&badge_list, i));
                     i = i + 1;
                 };
-                *table::borrow_mut(&mut collection.nft_badges, token_id) = existing_badges;
+                *table::borrow_mut(&mut collection.minter_badges, addr) = existing_badges;
             } else {
-                table::add(&mut collection.nft_badges, token_id, badge_list);
+                table::add(&mut collection.minter_badges, addr, badge_list);
+            };
+            
+            index = index + 1;
+        };
+    }
+
+    public entry fun set_badge_name(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        badge_id: u64,
+        badge_name: String
+    ) {
+        if (table::contains(&collection.badge_names, badge_id)) {
+            *table::borrow_mut(&mut collection.badge_names, badge_id) = badge_name;
+        } else {
+            table::add(&mut collection.badge_names, badge_id, badge_name);
+        };
+    }
+
+    public entry fun set_bulk_badge_names(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        badge_ids: vector<u64>,
+        badge_names: vector<String>
+    ) {
+        assert!(vector::length(&badge_ids) == vector::length(&badge_names), EInvalidQuantity);
+
+        let mut index = 0;
+        while (index < vector::length(&badge_ids)) {
+            let badge_id = *vector::borrow(&badge_ids, index);
+            let badge_name = *vector::borrow(&badge_names, index);
+            
+            if (table::contains(&collection.badge_names, badge_id)) {
+                *table::borrow_mut(&mut collection.badge_names, badge_id) = badge_name;
+            } else {
+                table::add(&mut collection.badge_names, badge_id, badge_name);
             };
             
             index = index + 1;
@@ -394,23 +454,20 @@ module beelievers_mint::mint {
         };
     }
 
-    public entry fun add_post_mint_badge(
+    public entry fun add_post_mint_minter_badge(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        token_id: u64,
-        badge: String,
+        addr: address,
+        badge: u64,
     ) {
-        assert!(token_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
-        
-        // This allows adding new badges to existing ones
-        if (table::contains(&collection.nft_badges, token_id)) {
-            let mut badges = *table::borrow(&collection.nft_badges, token_id);
+        if (table::contains(&collection.minter_badges, addr)) {
+            let mut badges = *table::borrow(&collection.minter_badges, addr);
             vector::push_back(&mut badges, badge);
-            *table::borrow_mut(&mut collection.nft_badges, token_id) = badges;
+            *table::borrow_mut(&mut collection.minter_badges, addr) = badges;
         } else {
-            let mut badges = vector::empty<String>();
+            let mut badges = vector::empty<u64>();
             vector::push_back(&mut badges, badge);
-            table::add(&mut collection.nft_badges, token_id, badges);
+            table::add(&mut collection.minter_badges, addr, badges);
         };
     }
 
@@ -420,7 +477,7 @@ module beelievers_mint::mint {
         nft_id: u64,
         url_bytes: vector<u8>,
     ) {
-        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
+        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
 
         let nft_url = url::new_unsafe_from_bytes(url_bytes);
 
@@ -437,7 +494,7 @@ module beelievers_mint::mint {
         nft_ids: vector<u64>,
         urls: vector<vector<u8>>
     ) {
-        assert!(vector::length(&nft_ids) == vector::length(&urls), ERROR_INVALID_QUANTITY);
+        assert!(vector::length(&nft_ids) == vector::length(&urls), EInvalidQuantity);
 
         let mut index = 0;
         while (index < vector::length(&nft_ids)) {
@@ -458,7 +515,7 @@ module beelievers_mint::mint {
         values: vector<vector<String>>
     ) {
         let total_nfts = vector::length(&nft_ids);
-        assert!(total_nfts == vector::length(&keys) && total_nfts == vector::length(&values), ERROR_INVALID_QUANTITY);
+        assert!(total_nfts == vector::length(&keys) && total_nfts == vector::length(&values), EInvalidQuantity);
 
         let mut index = 0;
         while (index < total_nfts) {
@@ -479,8 +536,8 @@ module beelievers_mint::mint {
         keys: vector<String>,
         values: vector<String>
     ) {
-        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
-        assert!(vector::length(&keys) == vector::length(&values), ERROR_INVALID_QUANTITY);
+        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
+        assert!(vector::length(&keys) == vector::length(&values), EInvalidQuantity);
 
         let mut attributes_map = vec_map::empty<String, String>();
         let mut index = 0;
@@ -511,9 +568,9 @@ module beelievers_mint::mint {
         end_id: u64,
         ctx: &mut TxContext
     ) {
-        assert!(!collection.premint_completed, ERROR_PREMINT_NOT_COMPLETED);
-        assert!(start_id <= end_id, ERROR_INVALID_RANGE);
-        assert!(start_id > 0 && end_id <= TOTAL_SUPPLY, ERROR_INVALID_TOKEN_ID);
+        assert!(!collection.premint_completed, EPremintAlreadyCompleted);
+        assert!(start_id <= end_id, EInvalidRange);
+        assert!(start_id > 0 && end_id <= TOTAL_SUPPLY, EInvalidTokenId);
 
 
         let mut current_id = start_id;
@@ -531,21 +588,15 @@ module beelievers_mint::mint {
 
             let token_id = if (is_mythic) {
                 let (exists, index) = vector::index_of(&collection.available_mythics, &current_id);
-                assert!(exists, ERROR_INVALID_TOKEN_ID);
+                assert!(exists, EInvalidTokenId);
                 vector::remove(&mut collection.available_mythics, index)
             } else {
                 let (exists, index) = vector::index_of(&collection.available_normals, &current_id);
-                assert!(exists, ERROR_INVALID_TOKEN_ID);
+                assert!(exists, EInvalidTokenId);
                 vector::remove(&mut collection.available_normals, index)
             };
             
-            let badges = if (table::contains(&collection.nft_badges, token_id)) {
-                *table::borrow(&collection.nft_badges, token_id)
-            } else {
-                vector::empty<String>()
-            };
-            
-            let nft = create_nft(collection, token_id, badges, ctx);
+            let nft = create_nft(collection, token_id, tx_context::sender(ctx), ctx);
             let nft_id = object::id(&nft);
 
             collection.total_minted = collection.total_minted + 1;
@@ -558,10 +609,16 @@ module beelievers_mint::mint {
 
             kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
 
+            let nft_badges = if (table::contains<address, vector<u64>>(&collection.minter_badges, tx_context::sender(ctx))) {
+                *table::borrow<address, vector<u64>>(&collection.minter_badges, tx_context::sender(ctx))
+            } else {
+                vector::empty<u64>()
+            };
+
             event::emit(NFTMinted {
                 nft_id,
                 token_id,
-                badges,
+                badges: nft_badges,
                 minter: tx_context::sender(ctx),
             });
 
@@ -593,22 +650,24 @@ module beelievers_mint::mint {
         let sender = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
 
-        assert!(collection.minting_active, ERROR_MINTING_NOT_ACTIVE);
-        assert!(current_time >= collection.mint_start_time, ERROR_MINTING_NOT_ACTIVE);
-        assert!(!has_minted(collection, sender), ERROR_ALREADY_MINTED);
-        assert!(collection.total_minted < TOTAL_SUPPLY, ERROR_INSUFFICIENT_SUPPLY);
+        assert!(collection.minting_active, EMintingNotActive);
+        assert!(current_time >= collection.mint_start_time, EMintingNotActive);
+        assert!(!has_minted(collection, sender), EAlreadyMinted);
+        assert!(collection.total_minted < TOTAL_SUPPLY, EInsufficientSupply);
+        assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
+
         
         if (collection.mint_price > 0) {
-            assert!(coin::value(&payment) >= collection.mint_price, ERROR_INSUFFICIENT_PAYMENT);
+            assert!(coin::value(&payment) >= collection.mint_price, EInsufficientPayment);
         };
 
         let (is_eligible, is_mythic) = determine_mint_eligibility(collection, sender, random, auction, ctx);
-        assert!(is_eligible, ERROR_UNAUTHORIZED);
+        assert!(is_eligible, EUnauthorized);
 
        let mut minted_mythic = is_mythic;
 
     let token_id = if (is_mythic) {
-        assert!(collection.mythic_minted < MYTHIC_SUPPLY, ERROR_NO_MYTHICS_AVAILABLE);
+        assert!(collection.mythic_minted < MYTHIC_SUPPLY, ENoMythicsAvailable);
         select_random_mythic(collection, random, ctx)
     } else {
         if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
@@ -619,13 +678,7 @@ module beelievers_mint::mint {
         }
     };
 
-        let badges = if (table::contains(&collection.nft_badges, token_id)) {
-            *table::borrow(&collection.nft_badges, token_id)
-        } else {
-            vector::empty<String>()
-        };
-
-        let nft = create_nft(collection, token_id, badges, ctx);
+        let nft = create_nft(collection, token_id, sender, ctx);
         let nft_id = object::id(&nft);
 
         collection.total_minted = collection.total_minted + 1;
@@ -637,16 +690,22 @@ module beelievers_mint::mint {
 
         table::add(&mut collection.minted_addresses, sender, true);
         
-        if (is_partner(collection, sender)) {
-            collection.remaining_partners = collection.remaining_partners - 1;
+        if (is_mythic_eligible(collection, sender)) {
+            collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
         };
 
         kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
 
+        let nft_badges = if (table::contains<address, vector<u64>>(&collection.minter_badges, sender)) {
+            *table::borrow<address, vector<u64>>(&collection.minter_badges, sender)
+        } else {
+            vector::empty<u64>()
+        };
+
         event::emit(NFTMinted {
             nft_id,
             token_id,
-            badges,
+            badges: nft_badges,
             minter: sender,
         });
 
@@ -665,7 +724,7 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ): (bool, bool) {
       
-        if (is_partner(collection, sender)) {
+        if (is_mythic_eligible(collection, sender)) {
             let is_mythic = roll_for_mythic(collection, random, ctx);
             return (true, is_mythic)
         };
@@ -687,19 +746,27 @@ module beelievers_mint::mint {
         )
     }
 
-    public fun is_partner_public(collection: &BeelieversCollection, addr: address): bool {
-        is_partner(collection, addr)
+    public fun is_mythic_eligible_public(collection: &BeelieversCollection, addr: address): bool {
+        is_mythic_eligible(collection, addr)
     }
 
     public fun has_minted_public(collection: &BeelieversCollection, addr: address): bool {
         has_minted(collection, addr)
     }
 
-    public fun get_nft_badges(collection: &BeelieversCollection, token_id: u64): vector<String> {
-        if (table::contains(&collection.nft_badges, token_id)) {
-            *table::borrow(&collection.nft_badges, token_id)
+    public fun get_minter_badges(collection: &BeelieversCollection, addr: address): vector<u64> {
+        if (table::contains(&collection.minter_badges, addr)) {
+            *table::borrow(&collection.minter_badges, addr)
         } else {
-            vector::empty<String>()
+            vector::empty<u64>()
+        }
+    }
+
+    public fun get_badge_name(collection: &BeelieversCollection, badge_id: u64): String {
+        if (table::contains(&collection.badge_names, badge_id)) {
+            *table::borrow(&collection.badge_names, badge_id)
+        } else {
+            string::utf8(b"unknown_badge")
         }
     }
 

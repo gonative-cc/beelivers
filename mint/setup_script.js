@@ -12,19 +12,23 @@ import { TransferPolicyTransaction } from '@mysten/kiosk';
 import { Secp256k1Keypair } from '@mysten/sui.js/keypairs/secp256k1';
 
 // Environment-specific configurations
+
+
 const CONFIGS = {
     test: {
-        PACKAGE_ID: '0xc32e1d79120d9111858f123564fea470dc04948cfbbdc0df422a912bb77058f9',
-        ADMIN_CAP: '0xe0eb4faaf26bee9a6f9f2a78f5c144c5fd08784e26ae9bb732082785f6d80530',
-        COLLECTION_ID: '0x557010fe270384caddaa82c70a36c72da2cdc22dfe0982fae3abf33de6678b5d',
-        TRANSFER_POLICY_ID: '0x241425fe25aaee8d56b7e6ca553873d319e4df04067d2d8b2dd282d794b47351',
-        AUCTION_CONTRACT: '0x345c10a69dab4ba85be56067c94c4a626c51e297b884e43b113d3eb99ed7a0f3',
+        PACKAGE_ID: '0x3064d43ee6cc4d703d4c10089786f0ae805b24d2d031326520131d78667ffc2c',
+        ADMIN_CAP: '0x0f85445dc767cb9fe6ae3cbc03c097ae656a2a660f5f208e8ceba5fec1ff2dc3',
+        COLLECTION_ID: '0x6a41d0a1b90172e558ec08169dff16dbe2b7d0d99d9c5f6164f00b6ae1c245a1',
+        TRANSFER_POLICY_ID: '0xef61e56ab17cac808a79bd5741054a3167f80608f4eb3908ff129ce0769fec40',
+        AUCTION_CONTRACT: '0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41',
         RPC_URL: 'https://fullnode.testnet.sui.io:443',
-        BATCH_SIZE: 5,
-        DELAY_BETWEEN_BATCHES: 2000,
-        TOTAL_NFTS: 5, // Test with first 5 NFTs only
-        PREMINT_RANGE: 5, // Test premint range
-        MINT_START_TIME: 1744088400000 //timestamp ms
+        BATCH_SIZE: 50,
+        DELAY_BETWEEN_BATCHES: 5000,
+        TOTAL_NFTS: 6021, // Full collection (same as production)
+        PREMINT_RANGE: 210, // Full premint range (same as production)
+        MINT_START_TIME: 1744088400000, //timestamp ms
+        TESTNET_ATTRIBUTES_LIMIT: 21, // Only process first 21 NFTs for attributes on testnet
+        TESTNET_URLS_LIMIT: 21 // Only process first 21 NFTs for URLs on testnet
     },
     production: {
         PACKAGE_ID: '', // Replace with production package ID
@@ -56,7 +60,7 @@ function getConfig() {
     return CONFIGS[environment];
 }
 const MODULE_NAME = 'mint';
-const ADMIN_PRIVATE_KEY = 'suiprivkeyxxx'; // Replace with your private key
+const ADMIN_PRIVATE_KEY = 'suiprivkeyxxx'; 
 
 // Enhanced logging with environment and timestamps
 function log(message, type = 'INFO') {
@@ -82,13 +86,20 @@ function getClientAndSigner() {
     return { client, signer };
 }
 
-// Add test partners (for test environment)
-async function addTestPartners() {
+// Add test mythic eligible (for test environment)
+async function addTestMythicEligible() {
     const { client, signer } = getClientAndSigner();
 
-    const testPartners = [
+    const testMythicEligible = [
+        '0x8a80d50ac4e36b3b6257f8e9a3afb429e717c08db9e2cc7643c0fd414767f7de',
+        '0x8e2ccd32e13ba1b9273bffb21ed1a850b18d319df026c39ecc279bc25d3ab8e2',
+        '0x7d42d4a91119cd4b5ca4ec637be61add4fdce404b70ebe84bfd7a8ac6dfa3d54',
+        '0x4a707ac63cca5b55559fbafffd35b166a8222f538f3a397ff7952ae9e4c0efda',
+        '0xe670405731f97182a4e5056b63385ddd6f7929dfa1a64f82c5f0bdd780dc79f4',
+        '0x1d62d59890e0e8adeace350653d05027846004887ed17b92abb3fdc803ffefa6',
+        '0x38b0b0a95e18fea78a63c69a43fb2e7412733dc4e5d2b5faeaf4ba867f85432a',
         '0xa3585953487cf72b94233df0895ae7f6bb05c873772f6ad956dac9cafb946d5d',
-        '0x9728ec13d7321c7ee46669454e6d49857cc29fed09ba13696af7692c55e61a24'
+        '0x9728ec13d7321c7ee46669454e6d49857cc29fed09ba13696af7692c55e61a24',
     ];
 
     const txb = new TransactionBlock();
@@ -96,11 +107,11 @@ async function addTestPartners() {
 
     const config = getConfig();
     txb.moveCall({
-        target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
+        target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_mythic_eligible`,
         arguments: [
             txb.object(config.ADMIN_CAP),
             txb.object(config.COLLECTION_ID),
-            txb.pure(testPartners),
+            txb.pure(testMythicEligible),
         ],
     });
 
@@ -110,52 +121,52 @@ async function addTestPartners() {
             transactionBlock: txb,
             options: { showEffects: true }
         });
-        log(`Successfully added ${testPartners.length} test partners`, 'SUCCESS');
+        log(`Successfully added ${testMythicEligible.length} test mythic eligible addresses`, 'SUCCESS');
         log(`Transaction digest: ${result.digest}`, 'INFO');
         return result;
     } catch (error) {
-        log(`Error adding test partners: ${error.message}`, 'ERROR');
+        log(`Error adding test mythic eligible: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-// Add production partners from file
-async function addProductionPartners() {
+// Add production mythic eligible from file
+async function addProductionMythicEligible() {
     const { client, signer } = getClientAndSigner();
 
     try {
-        log("Reading partners from partners.txt...", 'INFO');
-        const fileContent = await fs.readFile('partners.txt', 'utf8');
-        const partners = fileContent.split('\n')
+        log("Reading mythic eligible from mythic_eligible.txt...", 'INFO');
+        const fileContent = await fs.readFile('mythic_eligible.txt', 'utf8');
+        const mythicEligible = fileContent.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
             .map(addr => addr.startsWith('0x') ? addr : '0x' + addr);
 
-        if (partners.length === 0) {
-            throw new Error('No partners found in partners.txt');
+        if (mythicEligible.length === 0) {
+            throw new Error('No mythic eligible addresses found in mythic_eligible.txt');
         }
 
-        log(`Found ${partners.length} partners to add`, 'INFO');
+        log(`Found ${mythicEligible.length} mythic eligible addresses to add`, 'INFO');
 
-        const PARTNER_BATCH_SIZE = 50;
+        const MYTHIC_ELIGIBLE_BATCH_SIZE = 50;
         let totalProcessed = 0;
 
-        for (let i = 0; i < partners.length; i += PARTNER_BATCH_SIZE) {
-            const batchEnd = Math.min(i + PARTNER_BATCH_SIZE, partners.length);
-            const batchPartners = partners.slice(i, batchEnd);
+        for (let i = 0; i < mythicEligible.length; i += MYTHIC_ELIGIBLE_BATCH_SIZE) {
+            const batchEnd = Math.min(i + MYTHIC_ELIGIBLE_BATCH_SIZE, mythicEligible.length);
+            const batchMythicEligible = mythicEligible.slice(i, batchEnd);
             
-            log(`Processing partners batch ${i + 1}-${batchEnd} (${batchPartners.length} partners)`, 'INFO');
+            log(`Processing mythic eligible batch ${i + 1}-${batchEnd} (${batchMythicEligible.length} addresses)`, 'INFO');
 
             const txb = new TransactionBlock();
             txb.setGasBudget(1000000000);
 
             const config = getConfig();
             txb.moveCall({
-                target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_partners`,
+                target: `${config.PACKAGE_ID}::${MODULE_NAME}::add_mythic_eligible`,
                 arguments: [
                     txb.object(config.ADMIN_CAP),
                     txb.object(config.COLLECTION_ID),
-                    txb.pure(batchPartners),
+                    txb.pure(batchMythicEligible),
                 ],
             });
 
@@ -166,99 +177,142 @@ async function addProductionPartners() {
                     options: { showEffects: true }
                 });
                 
-                totalProcessed += batchPartners.length;
-                log(`Successfully added ${batchPartners.length} partners in current batch`, 'SUCCESS');
-                log(`Progress: ${totalProcessed}/${partners.length} partners processed`, 'INFO');
+                totalProcessed += batchMythicEligible.length;
+                log(`Successfully added ${batchMythicEligible.length} mythic eligible addresses in current batch`, 'SUCCESS');
+                log(`Progress: ${totalProcessed}/${mythicEligible.length} addresses processed`, 'INFO');
                 log(`Transaction digest: ${result.digest}`, 'INFO');
                 
                 // Add delay between batches to avoid rate limiting
-                if (batchEnd < partners.length) {
+                if (batchEnd < mythicEligible.length) {
                     log("Waiting 5 seconds before next batch...", 'INFO');
                     await new Promise(resolve => setTimeout(resolve, 5000));
                 }
                 
             } catch (error) {
-                log(`Error processing partners batch ${i + 1}-${batchEnd}: ${error.message}`, 'ERROR');
+                log(`Error processing mythic eligible batch ${i + 1}-${batchEnd}: ${error.message}`, 'ERROR');
                 throw error;
             }
         }
 
-        log(`Successfully added all ${totalProcessed} partners in batches`, 'SUCCESS');
+        log(`Successfully added all ${totalProcessed} mythic eligible addresses in batches`, 'SUCCESS');
         return { totalProcessed };
     } catch (error) {
-        log(`Error adding partners: ${error.message}`, 'ERROR');
+        log(`Error adding mythic eligible: ${error.message}`, 'ERROR');
         throw error;
     }
 }
 
-// Set badges from JSON file
-async function setBadgesFromJson() {
+// Set badge names from JSON file
+async function setBadgeNamesFromJson() {
     const { client, signer } = getClientAndSigner();
 
     try {
-        log("Reading badges from badges.json...", 'INFO');
-        const badgesData = JSON.parse(await fs.readFile('badges.json', 'utf8'));
-        const processedBadges = new Set();
+        log("Reading badge names from badge_names.json...", 'INFO');
+        const badgeNamesData = JSON.parse(await fs.readFile('badge_names.json', 'utf8'));
+        const badgeNames = badgeNamesData.badge_names;
 
-        log(`Found ${Object.keys(badgesData).length} badge entries in badges.json`, 'INFO');
-
-        const config = getConfig();
-        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
-            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
-            const tokenIds = [];
-            const badges = [];
-
-            for (let j = i; j <= batchEnd; j++) {
-                if (badgesData[j.toString()] && !processedBadges.has(j)) {
-                    tokenIds.push(j);
-                    
-                    const badgeData = badgesData[j.toString()];
-                    if (Array.isArray(badgeData)) {
-                        badges.push(badgeData);
-                    } else {
-                        badges.push([badgeData]);
-                    }
-                    
-                    processedBadges.add(j);
-                }
-            }
-
-            if (tokenIds.length > 0) {
-                log(`Processing badges batch from NFT #${i} to #${batchEnd} (${tokenIds.length} NFTs)`, 'INFO');
-                
-                const txb = new TransactionBlock();
-                txb.setGasBudget(1000000000);
-
-                txb.moveCall({
-                    target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_badges`,
-                    arguments: [
-                        txb.object(config.ADMIN_CAP),
-                        txb.object(config.COLLECTION_ID),
-                        txb.pure(tokenIds),
-                        txb.pure(badges),
-                    ],
-                });
-
-                try {
-                    const result = await client.signAndExecuteTransactionBlock({
-                        signer,
-                        transactionBlock: txb,
-                        options: { showEffects: true }
-                    });
-                    log(`Successfully processed ${tokenIds.length} badges in current batch`, 'SUCCESS');
-                    
-                    if (i + config.BATCH_SIZE <= config.TOTAL_NFTS) {
-                        log(`Waiting ${config.DELAY_BETWEEN_BATCHES/1000} seconds before next batch...`, 'INFO');
-                        await new Promise(resolve => setTimeout(resolve, config.DELAY_BETWEEN_BATCHES));
-                    }
-                } catch (error) {
-                    log(`Error processing batch ${i}-${batchEnd}: ${error.message}`, 'ERROR');
-                    throw error;
-                }
-            }
+        if (!badgeNames) {
+            throw new Error('No badge_names found in badge_names.json');
         }
 
-        log(`Completed processing badges. Total NFTs processed: ${processedBadges.size}`, 'SUCCESS');
+        log(`Found ${Object.keys(badgeNames).length} badge name entries`, 'INFO');
+
+        const config = getConfig();
+        const badgeIds = Object.keys(badgeNames).map(id => parseInt(id));
+        const badgeNameStrings = Object.values(badgeNames);
+
+        log(`Setting ${badgeIds.length} badge names...`, 'INFO');
+        
+        const txb = new TransactionBlock();
+        txb.setGasBudget(1000000000);
+
+        txb.moveCall({
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_badge_names`,
+            arguments: [
+                txb.object(config.ADMIN_CAP),
+                txb.object(config.COLLECTION_ID),
+                txb.pure(badgeIds),
+                txb.pure(badgeNameStrings),
+            ],
+        });
+
+        try {
+            const result = await client.signAndExecuteTransactionBlock({
+                signer,
+                transactionBlock: txb,
+                options: { showEffects: true }
+            });
+            log(`Successfully set ${badgeIds.length} badge names`, 'SUCCESS');
+            log(`Transaction digest: ${result.digest}`, 'INFO');
+        } catch (error) {
+            log(`Error setting badge names: ${error.message}`, 'ERROR');
+            throw error;
+        }
+
+        log(`Completed setting badge names`, 'SUCCESS');
+    } catch (error) {
+        log(`Error reading or processing badge_names.json: ${error.message}`, 'ERROR');
+        throw error;
+    }
+}
+
+// Set minter badges from JSON file
+async function setMinterBadgesFromJson() {
+    const { client, signer } = getClientAndSigner();
+
+    try {
+        log("Reading minter badges from badges.json...", 'INFO');
+        const badgeData = JSON.parse(await fs.readFile('badges.json', 'utf8'));
+
+        if (!badgeData || Object.keys(badgeData).length === 0) {
+            log("No badge data found in badges.json, skipping minter badge assignment", 'WARNING');
+            return;
+        }
+
+        log(`Found ${Object.keys(badgeData).length} address entries with badge data`, 'INFO');
+
+        const config = getConfig();
+        const addresses = Object.keys(badgeData);
+        const badgeNumbers = Object.values(badgeData);
+
+        // Filter out empty badge arrays
+        const validEntries = addresses.filter((_, index) => badgeNumbers[index].length > 0);
+        const validBadgeNumbers = badgeNumbers.filter(badges => badges.length > 0);
+
+        if (validEntries.length === 0) {
+            log("No valid badge assignments found, skipping", 'WARNING');
+            return;
+        }
+
+        log(`Setting badges for ${validEntries.length} addresses...`, 'INFO');
+        
+        const txb = new TransactionBlock();
+        txb.setGasBudget(1000000000);
+
+        txb.moveCall({
+            target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_minter_badges`,
+            arguments: [
+                txb.object(config.ADMIN_CAP),
+                txb.object(config.COLLECTION_ID),
+                txb.pure(validEntries),
+                txb.pure(validBadgeNumbers),
+            ],
+        });
+
+        try {
+            const result = await client.signAndExecuteTransactionBlock({
+                signer,
+                transactionBlock: txb,
+                options: { showEffects: true }
+            });
+            log(`Successfully set badges for ${validEntries.length} addresses`, 'SUCCESS');
+            log(`Transaction digest: ${result.digest}`, 'INFO');
+        } catch (error) {
+            log(`Error setting minter badges: ${error.message}`, 'ERROR');
+            throw error;
+        }
+
+        log(`Completed setting minter badges`, 'SUCCESS');
     } catch (error) {
         log(`Error reading or processing badges.json: ${error.message}`, 'ERROR');
         throw error;
@@ -274,8 +328,16 @@ async function setAttributesFromJson() {
         log("Processing NFT attributes from JSON files...", 'INFO');
         const processedNfts = new Set();
 
-        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
-            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
+        // Determine the limit based on environment
+        const environment = process.argv[2] || 'test';
+        const maxNfts = environment === 'test' && config.TESTNET_ATTRIBUTES_LIMIT 
+            ? config.TESTNET_ATTRIBUTES_LIMIT 
+            : config.TOTAL_NFTS;
+
+        log(`Processing attributes for first ${maxNfts} NFTs (${environment === 'test' ? 'testnet limit' : 'full collection'})`, 'INFO');
+
+        for (let i = 1; i <= maxNfts; i += config.BATCH_SIZE) {
+            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, maxNfts);
             const batchNftIds = [];
             const batchKeys = [];
             const batchValues = [];
@@ -363,8 +425,16 @@ async function setUrlsFromJson() {
 
         log(`Found ${Object.keys(imageLinksData).length} URL entries in imagelinks.json`, 'INFO');
 
-        for (let i = 1; i <= config.TOTAL_NFTS; i += config.BATCH_SIZE) {
-            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, config.TOTAL_NFTS);
+        // Determine the limit based on environment
+        const environment = process.argv[2] || 'test';
+        const maxNfts = environment === 'test' && config.TESTNET_URLS_LIMIT 
+            ? config.TESTNET_URLS_LIMIT 
+            : config.TOTAL_NFTS;
+
+        log(`Processing URLs for first ${maxNfts} NFTs (${environment === 'test' ? 'testnet limit' : 'full collection'})`, 'INFO');
+
+        for (let i = 1; i <= maxNfts; i += config.BATCH_SIZE) {
+            const batchEnd = Math.min(i + config.BATCH_SIZE - 1, maxNfts);
             const nftIds = [];
             const urls = [];
 
@@ -926,19 +996,24 @@ log(`Mint Start Time: ${new Date(config.MINT_START_TIME).toISOString()} (${confi
     if (SKIP_MINTING) log("⚠️ Minting will be skipped", 'WARNING');
     
     try {
-        // Step 1: Add partners
-        log("\n1️⃣ Adding partners...", 'INFO');
+        // Step 1: Add mythic eligible
+        log("\n1️⃣ Adding mythic eligible...", 'INFO');
         if (environment === 'test') {
-            await addTestPartners();
+            await addTestMythicEligible();
         } else {
-            await addProductionPartners();
+            await addProductionMythicEligible();
         }
         await new Promise(resolve => setTimeout(resolve, 2000));
 
 
-        // Step 3: Set badges
-        log("\n3️⃣ Setting NFT badges...", 'INFO');
-        await setBadgesFromJson();
+        // Step 3: Set badge names
+        log("\n3️⃣ Setting badge names...", 'INFO');
+        await setBadgeNamesFromJson();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Step 3.5: Set minter badges
+        log("\n3️⃣5️⃣ Setting minter badges...", 'INFO');
+        await setMinterBadgesFromJson();
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Step 4: Set attributes
@@ -961,9 +1036,14 @@ log(`Mint Start Time: ${new Date(config.MINT_START_TIME).toISOString()} (${confi
         await addRoyaltyAndLockRules();
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Step 8: Execute premint
-        log("\n8️⃣ Executing premint...", 'INFO');
-        await executePremint();
+        // Step 8: Execute premint (skip on testnet, manually set as completed)
+        if (environment === 'test') {
+            log("\n8️⃣ Skipping premint on testnet, setting premint_completed to true...", 'INFO');
+            await setPremintCompleted(true);
+        } else {
+            log("\n8️⃣ Executing premint...", 'INFO');
+            await executePremint();
+        }
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Step 9: Start minting
@@ -972,13 +1052,16 @@ log(`Mint Start Time: ${new Date(config.MINT_START_TIME).toISOString()} (${confi
 
         log("\n🎉 Setup completed successfully!", 'SUCCESS');
         log("\n📊 Setup Summary:", 'INFO');
-        log(`   ✅ Partners added (${environment === 'test' ? '3 test partners' : 'from partners.txt'})`, 'SUCCESS');
-        log(`   ✅ Badges set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
-        log(`   ✅ Attributes set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
-        log(`   ✅ URLs set for ${config.TOTAL_NFTS} NFTs`, 'SUCCESS');
+        log(`   ✅ Mythic eligible added (${environment === 'test' ? '2 test mythic eligible' : 'from mythic_eligible.txt'})`, 'SUCCESS');
+        log(`   ✅ Badge names set from badge_names.json`, 'SUCCESS');
+        log(`   ✅ Minter badges assigned from badges.json`, 'SUCCESS');
+        log(`   ✅ Attributes set for ${environment === 'test' ? config.TESTNET_ATTRIBUTES_LIMIT : config.TOTAL_NFTS} NFTs`, 'SUCCESS');
+        log(`   ✅ URLs set for ${environment === 'test' ? config.TESTNET_URLS_LIMIT : config.TOTAL_NFTS} NFTs`, 'SUCCESS');
         log(`   ✅ Badge display settings configured`, 'SUCCESS');
         log(`   ✅ Royalty and lock rules added`, 'SUCCESS');
-        if (!SKIP_PREMINT) {
+        if (environment === 'test') {
+            log(`   ✅ Premint skipped on testnet, manually set as completed`, 'SUCCESS');
+        } else if (!SKIP_PREMINT) {
             log(`   ✅ Premint executed (NFTs #1-${config.PREMINT_RANGE})`, 'SUCCESS');
         }
         if (!SKIP_MINTING) {
@@ -1020,8 +1103,8 @@ Examples:
   node setup_script.js test-minting
 
 Commands:
-  test              - Run complete test setup (partners, badges, attributes, URLs, premint, minting)
-  production        - Run complete production setup (partners, badges, attributes, URLs, premint, minting)
+  test              - Run complete test setup (mythic eligible, badges, attributes, URLs, premint, minting)
+  production        - Run complete production setup (mythic eligible, badges, attributes, URLs, premint, minting)
   test-minting      - Test minting functionality only (starts minting immediately)
   set-premint       - Set premint_completed to true (for testing)
 
@@ -1029,22 +1112,23 @@ Required Files:
   - badges.json: Token ID to badge mapping
   - imagelinks.json: Token ID to Walrus URL mapping
   - JSON/: Directory with individual NFT JSON files
-  - partners.txt: Partner addresses (for production only)
+  - mythic_eligible.txt: Mythic eligible addresses (for production only)
 
 Test Environment:
   - Uses testnet RPC
-  - Tests first 5 NFTs only
-  - Uses 3 test partner addresses
-  - Smaller batch sizes and delays
+  - Processes first 21 NFTs for attributes and URLs only
+  - Uses 2 test mythic eligible addresses
+  - Same batch sizes and delays as production
+  - Skips premint execution, manually sets premint_completed to true
 
 Production Environment:
   - Uses mainnet RPC
-  - Processes all 6021 NFTs
-  - Uses partners from partners.txt
-  - Larger batch sizes and delays
+  - Processes all 6021 NFTs for all features
+  - Uses mythic eligible from mythic_eligible.txt
+  - Full batch sizes and delays
 
 Configuration:
-  - Test: 5 NFTs, Batch Size: 5, Premint: 5, Mint Start: 1 hour from now
+  - Test: 21 NFTs (attributes/URLs), Batch Size: 50, Premint: skipped, Mint Start: 1 hour from now
   - Production: 6021 NFTs, Batch Size: 50, Premint: 210, Mint Start: 1 hour from now
 
 Mint Start Time Configuration:
