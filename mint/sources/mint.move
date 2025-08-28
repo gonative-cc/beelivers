@@ -157,6 +157,7 @@ module beelievers_mint::mint {
         minter: address,
         ctx: &mut TxContext
     ): BeelieverNFT {
+        // REVIEW: name should be BTCFi Beelievers
         let mut name = string::utf8(b"Beelievers #");
         string::append(&mut name, u64_to_string(token_id));
         
@@ -252,14 +253,19 @@ module beelievers_mint::mint {
         vector::swap_remove(&mut collection.available_normals, random_index)
     }
 
+    // REVIEW: duplicate: this should be public and we shoudl remove is_partner_public
     fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
         table::contains(&collection.mythic_eligible_list, addr)
     }
 
+    // REVIEW: duplicate: this should be public and we shoudl remove has_minted_public
     fun has_minted(collection: &BeelieversCollection, addr: address): bool {
         table::contains(&collection.minted_addresses, addr)
     }
 
+    // REVIEW: Important Bug. If remaining_partners >0 then thre is still a chance to
+    // mint partner NFT. So basically, we don't give any chance to early minters to mint a mythic
+    // Also the range is wrong in the generator
     fun roll_for_mythic(
         collection: &BeelieversCollection,
         random: &Random,
@@ -273,11 +279,11 @@ module beelievers_mint::mint {
         if (remaining_mythics == 0) {
             return false
         };
-        
+
         if (remaining_mythic_eligible <= remaining_mythics) {
             return true
         };
-        
+
         let roll = random::generate_u64_in_range(&mut generator, 1, remaining_mythic_eligible + 1);
         roll <= remaining_mythics
     }
@@ -286,6 +292,7 @@ module beelievers_mint::mint {
         collection.remaining_mythic_eligible
     }
 
+    // REVIEW: should be called before minting
     public entry fun add_mythic_eligible(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
@@ -335,6 +342,7 @@ module beelievers_mint::mint {
         collection.treasury_address = treasury_address;
     }
 
+    // REVIEW: this is not needed, people don't pay for the mint
     public entry fun set_mint_price(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
@@ -351,6 +359,7 @@ module beelievers_mint::mint {
         collection.premint_completed = completed;
     }
 
+    // REVIEW: not needed, we should use the "bulk" verions to optimize the cost.
     public entry fun set_minter_badge(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
@@ -521,7 +530,11 @@ module beelievers_mint::mint {
             index = index + 1;
         };
     }
-      public entry fun set_nft_attributes(
+
+    /// sets attributes (metadata) for a given NFT. keys and values are lists that makes the
+    /// key -> value mapping and has to have the same size.
+    /// NOTE: It overwrites the previous set of attributes.
+    public entry fun set_nft_attributes(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         nft_id: u64,
@@ -550,6 +563,10 @@ module beelievers_mint::mint {
         };
     }
 
+    // TODO: needs an ability to add new badges in the future, without overwriting.
+
+    // REVIEW: the logic is wrong: we should assign random NFTs during the premint.
+    /// Mints (end_id - start_id + 1) NFTs to the
     public entry fun premint_to_native_range(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
@@ -574,6 +591,7 @@ module beelievers_mint::mint {
             let normal_cap_reached = collection.normal_minted >= 200;
             
             if ((is_mythic && mythic_cap_reached) || (!is_mythic && normal_cap_reached)) {
+                // REVIEW: here we should break - no more mints are possible
                 current_id = current_id + 1;
                 continue
             };
@@ -581,6 +599,7 @@ module beelievers_mint::mint {
             let token_id = if (is_mythic) {
                 let (exists, index) = vector::index_of(&collection.available_mythics, &current_id);
                 assert!(exists, EInvalidTokenId);
+                // Review: this is very inefficient
                 vector::remove(&mut collection.available_mythics, index)
             } else {
                 let (exists, index) = vector::index_of(&collection.available_normals, &current_id);
@@ -611,6 +630,8 @@ module beelievers_mint::mint {
                 nft_id,
                 token_id,
                 badges: nft_badges,
+                // NOTE: technically this the AdminCap owner
+                // REVIEW: do we need it? Event already contains sender info.
                 minter: tx_context::sender(ctx),
             });
 
@@ -628,10 +649,14 @@ module beelievers_mint::mint {
         };
     }
 
+    // TODO: we should allow admin to mint not minted tokens after some time
+
     public entry fun mint(
         collection: &mut BeelieversCollection,
+        // REVIEW: there is no payment, we already had an auction
         payment: Coin<SUI>,
         transfer_policy: &transfer_policy::TransferPolicy<BeelieverNFT>,
+        // REVIEW: standard objects should be at the end (so Auction should be before random etc...)
         random: &Random,
         clock: &Clock,
         auction: &Auction,
@@ -648,7 +673,6 @@ module beelievers_mint::mint {
         assert!(collection.total_minted < TOTAL_SUPPLY, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
-        
         if (collection.mint_price > 0) {
             assert!(coin::value(&payment) >= collection.mint_price, EInsufficientPayment);
         };
@@ -662,6 +686,7 @@ module beelievers_mint::mint {
         assert!(collection.mythic_minted < MYTHIC_SUPPLY, ENoMythicsAvailable);
         select_random_mythic(collection, random, ctx)
     } else {
+        // REVIEW: We have a chance for a normal user to obtain a mythic token if all normal tokens have been minted.
         if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
             minted_mythic = true;
             select_random_mythic(collection, random, ctx)
@@ -686,6 +711,7 @@ module beelievers_mint::mint {
             collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
         };
 
+        // REVIEW: where do we transfer the NFT?
         kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
 
         let nft_badges = if (table::contains<address, vector<u64>>(&collection.minter_badges, sender)) {
@@ -704,10 +730,12 @@ module beelievers_mint::mint {
         if (collection.mint_price > 0) {
          transfer::public_transfer(payment, collection.treasury_address);
         } else {
+         // REVIEW: should be removed!
          coin::destroy_zero(payment);
         };
     }
 
+    /// returns (is_auction_winner, )
     fun determine_mint_eligibility(
         collection: &BeelieversCollection,
         sender: address,
@@ -721,11 +749,7 @@ module beelievers_mint::mint {
             return (true, is_mythic)
         };
 
-        if (auction::is_winner(auction, sender)) {
-            return (true, false)
-        };
-        
-        (false, false) 
+        (auction::is_winner(auction, sender), false)
     }
 
     public fun get_collection_stats(collection: &BeelieversCollection): (u64, u64, u64, u64, u64) {
@@ -794,4 +818,4 @@ module beelievers_mint::mint {
     }
 
 
-} 
+}
