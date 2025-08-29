@@ -638,7 +638,6 @@ module beelievers_mint::mint {
             assert!(vec[i] == false);
             i = i + 1;
         };
-        vector::destroy_empty(vec);
 
         let vec = create_boolean_vector(5, true);
         assert!(vector::length(&vec) == 5, 0);
@@ -647,6 +646,5 @@ module beelievers_mint::mint {
             assert!(vec[i]);
             i = i + 1;
         };
-        vector::destroy_empty(vec);
     }
 }
