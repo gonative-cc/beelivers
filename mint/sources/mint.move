@@ -541,11 +541,15 @@ module beelievers_mint::mint {
         let (is_eligible, can_mythic) = determine_mint_eligibility(collection, sender, auction);
         assert!(is_eligible, EUnauthorized);
 
-        // TODO: make sure we mint all mythic to eligible users
-        // TODO: check if we have available NORMAL supply
         let mut generator = random.new_generator(ctx);
         let start = if (can_mythic) 1 else MYTHIC_SUPPLY+1;
-        let mut token_id = generator.generate_u64_in_range(start, MYTHIC_SUPPLY);
+        let remaining_mythics = MYTHIC_SUPPLY - collection.mythic_minted;
+        // we need to make sure that mythics will be all minted to eligible users
+        // so if number of eligible users gets to the remining mythics, we assure that
+        // they mint mythic
+        let end = if (can_mythic && remaining_mythics <= collection.remaining_mythic_eligible)
+            MYTHIC_SUPPLY else MYTHIC_SUPPLY;
+        let mut token_id = generator.generate_u64_in_range(start, end);
         // iterate until we find available NFT
         while (!collection.available_nfts[token_id]) {
             token_id = token_id + 1;
