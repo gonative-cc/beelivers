@@ -37,12 +37,6 @@ module beelievers_mint::mint {
         minter: address,
     }
 
-    public struct PremintCompleted has copy, drop {
-        mythics_minted: u64,
-        normals_minted: u64,
-        timestamp: u64,
-    }
-
     public struct MintingStarted has copy, drop {
         timestamp: u64,
     }
@@ -56,7 +50,6 @@ module beelievers_mint::mint {
     public struct BeelieversCollection has key {
         id: UID,
         remaining_mythic: u64,
-        normal_minted: u64,
         remaining_supply: u64,
         // vector values make a list nfts that are remaining to mint.
         // each time we mint an NFT, we probe it from a specific index:
@@ -98,7 +91,6 @@ module beelievers_mint::mint {
             id: object::new(ctx),
             remaining_supply: TOTAL_SUPPLY,
             remaining_mythic: MYTHIC_SUPPLY,
-            normal_minted: 0,
             remaining_nfts: vector::tabulate!(TOTAL_SUPPLY, |i| i),
             premint_completed: false,
             minting_active: false,
@@ -460,9 +452,6 @@ module beelievers_mint::mint {
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
             collection.remaining_mythic = collection.remaining_mythic - 1;
-        } else {
-            // TODO: we can remove this
-            collection.normal_minted = collection.normal_minted + 1;
         };
 
         event::emit(NFTMinted {
@@ -508,13 +497,6 @@ module beelievers_mint::mint {
         };
 
         collection.premint_completed = true;
-        // TODO: we don't need this event,
-        // maybe we can have an event to display minted NFTs, but we already have them above
-        event::emit(PremintCompleted {
-            mythics_minted: collection.remaining_mythic,
-            normals_minted: collection.normal_minted,
-            timestamp: 0,
-        });
     }
 
     // TODO: we should allow admin to mint not minted tokens after some time
@@ -573,7 +555,9 @@ module beelievers_mint::mint {
 
     /// returns: (total_minted, mythic_minted, normal_minted)
     public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
-        (TOTAL_SUPPLY - c.remaining_supply, MYTHIC_SUPPLY - c.remaining_mythic, c.normal_minted)
+        let total_minted = TOTAL_SUPPLY - c.remaining_supply;
+        let mythic_minted = MYTHIC_SUPPLY - c.remaining_mythic;
+        (total_minted, mythic_minted, total_minted - mythic_minted)
     }
 
     public fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
