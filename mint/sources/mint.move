@@ -69,6 +69,7 @@ module beelievers_mint::mint {
         treasury_address: address,
         nft_metadata: Table<u64, VecMap<String, String>>,
         minter_badges: Table<address, vector<u64>>,
+        // REVIEW: since this is a small list (only 21 entries), it should be vector.
         badge_names: Table<u64, String>,
         displayable_badges: Table<String, bool>,
         preset_urls: Table<u64, Url>,
