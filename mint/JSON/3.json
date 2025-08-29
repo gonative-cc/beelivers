@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #3",
-  "description": "A rare mythical Beeliever: shreck",
+  "description": "A rare mythical Beeliever: Shrek",
   "image": "3.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "shreck"
+      "value": "Shrek"
     }
   ],
   "properties": {

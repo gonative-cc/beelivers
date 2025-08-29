@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #19",
-  "description": "A rare mythical Beeliever: yeti",
+  "description": "A rare mythical Beeliever: Yeti",
   "image": "19.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "yeti"
+      "value": "Yeti"
     }
   ],
   "properties": {

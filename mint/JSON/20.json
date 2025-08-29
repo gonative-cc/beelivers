@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #20",
-  "description": "A rare mythical Beeliever: hexapixa",
+  "description": "A rare mythical Beeliever: Hexapixa",
   "image": "20.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "hexapixa"
+      "value": "Hexapixa"
     }
   ],
   "properties": {

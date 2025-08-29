@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #1",
-  "description": "A rare mythical Beeliever: alien",
+  "description": "A rare mythical Beeliever: Alien",
   "image": "1.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "alien"
+      "value": "Alien"
     }
   ],
   "properties": {

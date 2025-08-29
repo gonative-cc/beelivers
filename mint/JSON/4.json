@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #4",
-  "description": "A rare mythical Beeliever: ika",
+  "description": "A rare mythical Beeliever: Ika",
   "image": "4.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "ika"
+      "value": "Ika"
     }
   ],
   "properties": {

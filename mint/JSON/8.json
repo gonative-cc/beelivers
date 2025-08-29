@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #8",
-  "description": "A rare mythical Beeliever: nativ stars",
+  "description": "A rare mythical Beeliever: Buzzbee",
   "image": "8.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "nativ stars"
+      "value": "Buzzbee"
     }
   ],
   "properties": {

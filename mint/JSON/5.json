@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #5",
-  "description": "A rare mythical Beeliever: robot",
+  "description": "A rare mythical Beeliever: Robot",
   "image": "5.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "robot"
+      "value": "Robot"
     }
   ],
   "properties": {

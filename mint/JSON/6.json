@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #6",
-  "description": "A rare mythical Beeliever: sui",
+  "description": "A rare mythical Beeliever: Sui",
   "image": "6.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "sui"
+      "value": "Sui"
     }
   ],
   "properties": {

@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #9",
-  "description": "A rare mythical Beeliever: nativ barbee",
+  "description": "A rare mythical Beeliever: Barbee",
   "image": "9.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "nativ barbee"
+      "value": "Barbee"
     }
   ],
   "properties": {

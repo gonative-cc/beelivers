@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #16",
-  "description": "A rare mythical Beeliever: squid green",
+  "description": "A rare mythical Beeliever: Squidward",
   "image": "16.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "squid green"
+      "value": "Squidward"
     }
   ],
   "properties": {

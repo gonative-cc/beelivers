@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #18",
-  "description": "A rare mythical Beeliever: pepe",
+  "description": "A rare mythical Beeliever: Pepe",
   "image": "18.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "pepe"
+      "value": "Pepe"
     }
   ],
   "properties": {

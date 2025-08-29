@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #15",
-  "description": "A rare mythical Beeliever: squid",
+  "description": "A rare mythical Beeliever: Squid",
   "image": "15.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "squid"
+      "value": "Squid"
     }
   ],
   "properties": {

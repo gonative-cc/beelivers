@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #17",
-  "description": "A rare mythical Beeliever: creeper",
+  "description": "A rare mythical Beeliever: Creeper",
   "image": "17.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "creeper"
+      "value": "Creeper"
     }
   ],
   "properties": {

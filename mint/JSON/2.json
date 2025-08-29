@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #2",
-  "description": "A rare mythical Beeliever: yoda",
+  "description": "A rare mythical Beeliever: Yoda",
   "image": "2.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "yoda"
+      "value": "Yoda"
     }
   ],
   "properties": {

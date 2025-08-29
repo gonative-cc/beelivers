@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #21",
-  "description": "A rare mythical Beeliever: munch",
+  "description": "A rare mythical Beeliever: Munch",
   "image": "21.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Mythic Name",
-      "value": "munch"
+      "value": "Munch"
     }
   ],
   "properties": {
