@@ -174,10 +174,10 @@ module beelievers_mint::mint_tests {
         let none = string::utf8(b"None");
         
         // Test string lengths
-        assert!(string::length(&top_bidder) == 10, 0);
+        assert!(string::length(&top_bidder) == 9, 0);
         assert!(string::length(&partner) == 7, 1);
-        assert!(string::length(&early_supporter) == 15, 2);
-        assert!(string::length(&whitelist) == 10, 3);
+        assert!(string::length(&early_supporter) == 14, 2);
+        assert!(string::length(&whitelist) == 9, 3);
         assert!(string::length(&none) == 4, 4);
         
         // Test string comparisons

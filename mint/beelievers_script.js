@@ -372,7 +372,7 @@ async function executeNativePremint() {
             tx2.setGasBudget(2000000000); 
 
             tx2.moveCall({
-                target: `${PACKAGE_ID}::${MODULE_NAME}::premint_to_native_range`,
+                target: `${PACKAGE_ID}::${MODULE_NAME}::premint_to_native`,
                 arguments: [
                     tx2.object(ADMIN_CAP),
                     tx2.object(COLLECTION_ID),

@@ -182,8 +182,8 @@ start_minting(admin_cap, collection, start_time)
 mint(collection, payment, transfer_policy, random, clock, auction, kiosk, kiosk_cap)
 
 // Check eligibility
-is_mythic_eligible_public(collection, address)
-has_minted_public(collection, address)
+is_mythic_eligible(collection, address)
+has_minted(collection, address)
 
 // Get collection stats
 get_collection_stats(collection)

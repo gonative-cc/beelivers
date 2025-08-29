@@ -10,8 +10,12 @@ beelivers_auction = {git = "https://github.com/suibdev/beelievers1.git", subdir 
 
 [addresses]
 beelievers_mint = "0x0"
+
 # TODO: change to production contract address
+## TESTING
 beelivers_auction = "0xdbf3aaf553b3bc58d2e726d12424eb0ebb761ae62285a55b52011e40653bd4c8"
+# beelivers_auction = "0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41"
+treasury_address = "0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b"
 
 [dev-dependencies]
 
