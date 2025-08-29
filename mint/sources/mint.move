@@ -34,7 +34,6 @@ module beelievers_mint::mint {
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
         token_id: u64,
-        // TODO: can we rename to recipient?
         minter: address,
     }
 
@@ -454,7 +453,6 @@ module beelievers_mint::mint {
         *elem_ref = false;
 
         collection.total_minted = collection.total_minted + 1;
-        // TODO: probably we can remove the counters below
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
             collection.mythic_minted = collection.mythic_minted + 1;
