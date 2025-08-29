@@ -2,8 +2,6 @@
 #[allow(lint(public_random))]
 module beelievers_mint::mint {
     use sui::clock::{Self, Clock};
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
     use sui::package;
     use sui::display;
     use sui::event;
@@ -20,25 +18,23 @@ module beelievers_mint::mint {
     const TOTAL_SUPPLY: u64 = 6021;
     const MYTHIC_SUPPLY: u64 = 21;
     const NORMAL_SUPPLY: u64 = 6000;
-    const NATIVE_MYTHICS: u64 = 10; 
+    const NATIVE_MYTHICS: u64 = 10;
+    const NATIVE_NORMALS: u64 = 200;
 
     const EInsufficientSupply: u64 = 1;
     const EMintingNotActive: u64 = 2;
     const EUnauthorized: u64 = 3;
     const EAlreadyMinted: u64 = 4;
-    const EInsufficientPayment: u64 = 5;
     const EInvalidQuantity: u64 = 6;
     const EInvalidTokenId: u64 = 7;
     const EPremintNotCompleted: u64 = 8;
-    const ENoMythicsAvailable: u64 = 9;
-    const EInvalidRange: u64 = 10;
-    const EPremintAlreadyCompleted: u64 = 11;
-    const EWrongAuctionContract: u64 = 12;
+    const EPremintAlreadyCompleted: u64 = 9;
+    const EWrongAuctionContract: u64 = 10;
 
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
         token_id: u64,
-        badges: vector<u64>,
+        // TODO: can we rename to recipient?
         minter: address,
     }
 
@@ -63,8 +59,7 @@ module beelievers_mint::mint {
         total_minted: u64,
         mythic_minted: u64,
         normal_minted: u64,
-        available_mythics: vector<u64>, 
-        available_normals: vector<u64>,         
+        available_nfts: vector<bool>,
         mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
         remaining_mythic_eligible: u64, 
@@ -73,7 +68,6 @@ module beelievers_mint::mint {
         mint_start_time: u64,
         auction_contract: address,
         treasury_address: address,
-        mint_price: u64,
         nft_metadata: Table<u64, VecMap<String, String>>,
         minter_badges: Table<address, vector<u64>>,
         badge_names: Table<u64, String>,
@@ -94,13 +88,12 @@ module beelievers_mint::mint {
     fun init(witness: MINT, ctx: &mut TxContext) {
         let publisher = package::claim(witness, ctx);
 
-        let mut collection = BeelieversCollection {
+        let collection = BeelieversCollection {
             id: object::new(ctx),
             total_minted: 0,
             mythic_minted: 0,
             normal_minted: 0,
-            available_mythics: vector::empty<u64>(),
-            available_normals: vector::empty<u64>(),
+            available_nfts: create_boolean_vector(TOTAL_SUPPLY, true),
             premint_completed: false,
             minting_active: false,
             mint_start_time: 0,
@@ -110,24 +103,11 @@ module beelievers_mint::mint {
             //TODO: change to production auction contract
             auction_contract: @0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41,
             treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
-            mint_price: 0,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             minter_badges: table::new<address, vector<u64>>(ctx),
             badge_names: table::new<u64, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
             preset_urls: table::new<u64, Url>(ctx)
-        };
-
-        let mut mythic_id = 1;
-        while (mythic_id <= MYTHIC_SUPPLY) {
-            vector::push_back(&mut collection.available_mythics, mythic_id);
-            mythic_id = mythic_id + 1;
-        };
-
-        let mut normal_id = MYTHIC_SUPPLY + 1;
-        while (normal_id <= TOTAL_SUPPLY) {
-            vector::push_back(&mut collection.available_normals, normal_id);
-            normal_id = normal_id + 1;
         };
 
         let _admin_cap = AdminCap { id: object::new(ctx) };
@@ -157,7 +137,6 @@ module beelievers_mint::mint {
         minter: address,
         ctx: &mut TxContext
     ): BeelieverNFT {
-        // REVIEW: name should be BTCFi Beelievers
         let mut name = string::utf8(b"Beelievers #");
         string::append(&mut name, u64_to_string(token_id));
         
@@ -208,6 +187,7 @@ module beelievers_mint::mint {
         }
     }
 
+    // REVIEW: should use string method
     fun u64_to_string(value: u64): String {
         if (value == 0) {
             return string::utf8(b"0")
@@ -223,73 +203,6 @@ module beelievers_mint::mint {
 
         vector::reverse(&mut buffer);
         string::utf8(buffer)
-    }
-
-    fun select_random_mythic(
-        collection: &mut BeelieversCollection,
-        random: &Random,
-        ctx: &mut TxContext
-    ): u64 {
-        assert!(!vector::is_empty(&collection.available_mythics), ENoMythicsAvailable);
-
-        let mut generator = random::new_generator(random, ctx);
-        let available_length = vector::length(&collection.available_mythics);
-        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length - 1) as u64)) as u64;
-
-        vector::swap_remove(&mut collection.available_mythics, random_index)
-    }
-
-    fun select_random_normal(
-        collection: &mut BeelieversCollection,
-        random: &Random,
-        ctx: &mut TxContext
-    ): u64 {
-        assert!(!vector::is_empty(&collection.available_normals), EInsufficientSupply);
-
-        let mut generator = random::new_generator(random, ctx);
-        let available_length = vector::length(&collection.available_normals);
-        let random_index = (random::generate_u64_in_range(&mut generator, 0, (available_length - 1) as u64)) as u64;
-
-        vector::swap_remove(&mut collection.available_normals, random_index)
-    }
-
-    // REVIEW: duplicate: this should be public and we shoudl remove is_partner_public
-    fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
-        table::contains(&collection.mythic_eligible_list, addr)
-    }
-
-    // REVIEW: duplicate: this should be public and we shoudl remove has_minted_public
-    fun has_minted(collection: &BeelieversCollection, addr: address): bool {
-        table::contains(&collection.minted_addresses, addr)
-    }
-
-    // REVIEW: Important Bug. If remaining_partners >0 then thre is still a chance to
-    // mint partner NFT. So basically, we don't give any chance to early minters to mint a mythic
-    // Also the range is wrong in the generator
-    fun roll_for_mythic(
-        collection: &BeelieversCollection,
-        random: &Random,
-        ctx: &mut TxContext
-    ): bool {
-        let mut generator = random::new_generator(random, ctx);
-        
-        let remaining_mythic_eligible = count_remaining_mythic_eligible(collection);
-        let remaining_mythics = vector::length(&collection.available_mythics);
-        
-        if (remaining_mythics == 0) {
-            return false
-        };
-
-        if (remaining_mythic_eligible <= remaining_mythics) {
-            return true
-        };
-
-        let roll = random::generate_u64_in_range(&mut generator, 1, remaining_mythic_eligible + 1);
-        roll <= remaining_mythics
-    }
-
-    fun count_remaining_mythic_eligible(collection: &BeelieversCollection): u64 {
-        collection.remaining_mythic_eligible
     }
 
     // REVIEW: should be called before minting
@@ -342,39 +255,12 @@ module beelievers_mint::mint {
         collection.treasury_address = treasury_address;
     }
 
-    // REVIEW: this is not needed, people don't pay for the mint
-    public entry fun set_mint_price(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        price: u64
-    ) {
-        collection.mint_price = price;
-    }
-
     public entry fun set_premint_completed(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         completed: bool
     ) {
         collection.premint_completed = completed;
-    }
-
-    // REVIEW: not needed, we should use the "bulk" verions to optimize the cost.
-    public entry fun set_minter_badge(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        addr: address,
-        badge: u64
-    ) {
-        if (table::contains(&collection.minter_badges, addr)) {
-            let mut badges = *table::borrow(&collection.minter_badges, addr);
-            vector::push_back(&mut badges, badge);
-            *table::borrow_mut(&mut collection.minter_badges, addr) = badges;
-        } else {
-            let mut badges = vector::empty<u64>();
-            vector::push_back(&mut badges, badge);
-            table::add(&mut collection.minter_badges, addr, badges);
-        };
     }
 
     public entry fun set_bulk_minter_badges(
@@ -403,19 +289,6 @@ module beelievers_mint::mint {
             };
             
             index = index + 1;
-        };
-    }
-
-    public entry fun set_badge_name(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        badge_id: u64,
-        badge_name: String
-    ) {
-        if (table::contains(&collection.badge_names, badge_id)) {
-            *table::borrow_mut(&mut collection.badge_names, badge_id) = badge_name;
-        } else {
-            table::add(&mut collection.badge_names, badge_id, badge_name);
         };
     }
 
@@ -565,96 +438,90 @@ module beelievers_mint::mint {
 
     // TODO: needs an ability to add new badges in the future, without overwriting.
 
-    // REVIEW: the logic is wrong: we should assign random NFTs during the premint.
-    /// Mints (end_id - start_id + 1) NFTs to the
-    public entry fun premint_to_native_range(
-        _admin_cap: &AdminCap,
+    // mints an NFT for the ctx sender
+    fun mint_for_sender(
         collection: &mut BeelieversCollection,
+        token_id: u64,
         transfer_policy: &transfer_policy::TransferPolicy<BeelieverNFT>,
         kiosk: &mut kiosk::Kiosk,
         kiosk_owner_cap: &kiosk::KioskOwnerCap,
-        start_id: u64,
-        end_id: u64,
+        ctx: &mut TxContext
+    ) {
+        let recipient = tx_context::sender(ctx);
+        let nft = collection.create_nft(token_id, recipient, ctx);
+
+        let elem_ref = collection.available_nfts.borrow_mut(token_id);
+        *elem_ref = false;
+
+        collection.total_minted = collection.total_minted + 1;
+        // TODO: probably we can remove the counters below
+        let is_mythic = token_id <= MYTHIC_SUPPLY;
+        if (is_mythic) {
+            collection.mythic_minted = collection.mythic_minted + 1;
+        } else {
+            collection.normal_minted = collection.normal_minted + 1;
+        };
+
+        event::emit(NFTMinted {
+            nft_id: object::id(&nft),
+            token_id,
+            // NOTE: technically this is the AdminCap owner
+            // REVIEW: do we need it? Event already contains sender info.
+            minter: recipient,
+        });
+
+        kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
+    }
+
+    /// Mints (end_id - start_id + 1) NFTs to the
+    public entry fun premint_to_native(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        tp: &transfer_policy::TransferPolicy<BeelieverNFT>,
+        kiosk: &mut kiosk::Kiosk,
+        kiosk_cap: &kiosk::KioskOwnerCap,
+        r: &Random,
         ctx: &mut TxContext
     ) {
         assert!(!collection.premint_completed, EPremintAlreadyCompleted);
-        assert!(start_id <= end_id, EInvalidRange);
-        assert!(start_id > 0 && end_id <= TOTAL_SUPPLY, EInvalidTokenId);
+        let mut generator = r.new_generator(ctx);
 
-
-        let mut current_id = start_id;
-
-        while (current_id <= end_id) {
-            let is_mythic = current_id <= 21;
-            
-            let mythic_cap_reached = collection.mythic_minted >= NATIVE_MYTHICS;
-            let normal_cap_reached = collection.normal_minted >= 200;
-            
-            if ((is_mythic && mythic_cap_reached) || (!is_mythic && normal_cap_reached)) {
-                // REVIEW: here we should break - no more mints are possible
-                current_id = current_id + 1;
-                continue
+        // mint NATIVE_MYTHICS to the treasury
+        let mut i = 1;
+        while (i <= NATIVE_MYTHICS ) {
+            // TODO we can optimize this and generate a bigger number and shift the bits
+            // NOTE: token_id starts from 1!
+            let token_id = generator.generate_u64_in_range(1, MYTHIC_SUPPLY);
+            if (collection.available_nfts[token_id]) {
+                collection.mint_for_sender(token_id, tp, kiosk, kiosk_cap, ctx);
+                i = i+1;
             };
-
-            let token_id = if (is_mythic) {
-                let (exists, index) = vector::index_of(&collection.available_mythics, &current_id);
-                assert!(exists, EInvalidTokenId);
-                // Review: this is very inefficient
-                vector::remove(&mut collection.available_mythics, index)
-            } else {
-                let (exists, index) = vector::index_of(&collection.available_normals, &current_id);
-                assert!(exists, EInvalidTokenId);
-                vector::remove(&mut collection.available_normals, index)
-            };
-            
-            let nft = create_nft(collection, token_id, tx_context::sender(ctx), ctx);
-            let nft_id = object::id(&nft);
-
-            collection.total_minted = collection.total_minted + 1;
-
-            if (is_mythic) {
-                collection.mythic_minted = collection.mythic_minted + 1;
-            } else {
-                collection.normal_minted = collection.normal_minted + 1;
-            };
-
-            kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
-
-            let nft_badges = if (table::contains<address, vector<u64>>(&collection.minter_badges, tx_context::sender(ctx))) {
-                *table::borrow<address, vector<u64>>(&collection.minter_badges, tx_context::sender(ctx))
-            } else {
-                vector::empty<u64>()
-            };
-
-            event::emit(NFTMinted {
-                nft_id,
-                token_id,
-                badges: nft_badges,
-                // NOTE: technically this the AdminCap owner
-                // REVIEW: do we need it? Event already contains sender info.
-                minter: tx_context::sender(ctx),
-            });
-
-            current_id = current_id + 1;
         };
 
-        if (collection.mythic_minted >= NATIVE_MYTHICS && collection.normal_minted >= 200) {
-            collection.premint_completed = true;
-            
-            event::emit(PremintCompleted {
-                mythics_minted: collection.mythic_minted,
-                normals_minted: collection.normal_minted,
-                timestamp: 0,
-            });
+        // mint NATIVE_NORMALS to the treasury
+        i = 1;
+        while (i <= NATIVE_NORMALS ) {
+            let token_id = generator.generate_u64_in_range(MYTHIC_SUPPLY+1, TOTAL_SUPPLY);
+            if (collection.available_nfts[token_id]) {
+                collection.mint_for_sender(token_id, tp, kiosk, kiosk_cap, ctx);
+                i = i+1;
+            };
         };
+
+        collection.premint_completed = true;
+        // TODO: we don't need this event,
+        // maybe we can have an event to display minted NFTs, but we already have them above
+        event::emit(PremintCompleted {
+            mythics_minted: collection.mythic_minted,
+            normals_minted: collection.normal_minted,
+            timestamp: 0,
+        });
     }
 
     // TODO: we should allow admin to mint not minted tokens after some time
 
     public entry fun mint(
         collection: &mut BeelieversCollection,
-        // REVIEW: there is no payment, we already had an auction
-        payment: Coin<SUI>,
         transfer_policy: &transfer_policy::TransferPolicy<BeelieverNFT>,
         // REVIEW: standard objects should be at the end (so Auction should be before random etc...)
         random: &Random,
@@ -673,101 +540,50 @@ module beelievers_mint::mint {
         assert!(collection.total_minted < TOTAL_SUPPLY, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
-        if (collection.mint_price > 0) {
-            assert!(coin::value(&payment) >= collection.mint_price, EInsufficientPayment);
-        };
-
-        let (is_eligible, is_mythic) = determine_mint_eligibility(collection, sender, random, auction, ctx);
+        let (is_eligible, can_mythic) = determine_mint_eligibility(collection, sender, auction);
         assert!(is_eligible, EUnauthorized);
 
-       let mut minted_mythic = is_mythic;
-
-    let token_id = if (is_mythic) {
-        assert!(collection.mythic_minted < MYTHIC_SUPPLY, ENoMythicsAvailable);
-        select_random_mythic(collection, random, ctx)
-    } else {
-        // REVIEW: We have a chance for a normal user to obtain a mythic token if all normal tokens have been minted.
-        if (vector::is_empty(&collection.available_normals) && !vector::is_empty(&collection.available_mythics)) {
-            minted_mythic = true;
-            select_random_mythic(collection, random, ctx)
-        } else {
-            select_random_normal(collection, random, ctx)
-        }
-    };
-
-        let nft = create_nft(collection, token_id, sender, ctx);
-        let nft_id = object::id(&nft);
-
-        collection.total_minted = collection.total_minted + 1;
-        if (minted_mythic) {
-            collection.mythic_minted = collection.mythic_minted + 1;
-        } else {
-            collection.normal_minted = collection.normal_minted + 1;
+        // TODO: make sure we mint all mythic to eligible users
+        // TODO: check if we have available NORMAL supply
+        let mut generator = random.new_generator(ctx);
+        let start = if (can_mythic) 1 else MYTHIC_SUPPLY+1;
+        let mut token_id = generator.generate_u64_in_range(start, MYTHIC_SUPPLY);
+        // iterate until we find available NFT
+        while (!collection.available_nfts[token_id]) {
+            token_id = token_id + 1;
+            if ( token_id > MYTHIC_SUPPLY ) {
+                token_id = start;
+            }
         };
 
-        table::add(&mut collection.minted_addresses, sender, true);
-        
-        if (is_mythic_eligible(collection, sender)) {
-            collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
-        };
-
-        // REVIEW: where do we transfer the NFT?
-        kiosk::lock(kiosk, kiosk_owner_cap, transfer_policy, nft);
-
-        let nft_badges = if (table::contains<address, vector<u64>>(&collection.minter_badges, sender)) {
-            *table::borrow<address, vector<u64>>(&collection.minter_badges, sender)
-        } else {
-            vector::empty<u64>()
-        };
-
-        event::emit(NFTMinted {
-            nft_id,
-            token_id,
-            badges: nft_badges,
-            minter: sender,
-        });
-
-        if (collection.mint_price > 0) {
-         transfer::public_transfer(payment, collection.treasury_address);
-        } else {
-         // REVIEW: should be removed!
-         coin::destroy_zero(payment);
-        };
+        collection.mint_for_sender(token_id, transfer_policy, kiosk, kiosk_owner_cap, ctx);
+        collection.minted_addresses.add(sender, true);
     }
 
-    /// returns (is_auction_winner, )
+    /// returns (is_auction_winner, can_mint_mythic)
     fun determine_mint_eligibility(
         collection: &BeelieversCollection,
         sender: address,
-        random: &Random,
         auction: &Auction,
-        ctx: &mut TxContext
     ): (bool, bool) {
       
         if (is_mythic_eligible(collection, sender)) {
-            let is_mythic = roll_for_mythic(collection, random, ctx);
-            return (true, is_mythic)
+            return (true, true)
         };
 
         (auction::is_winner(auction, sender), false)
     }
 
-    public fun get_collection_stats(collection: &BeelieversCollection): (u64, u64, u64, u64, u64) {
-        (
-            collection.total_minted,
-            collection.mythic_minted,
-            collection.normal_minted,
-            vector::length(&collection.available_mythics),
-            vector::length(&collection.available_normals)
-        )
+    public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
+        (c.total_minted, c.mythic_minted, c.normal_minted)
     }
 
-    public fun is_mythic_eligible_public(collection: &BeelieversCollection, addr: address): bool {
-        is_mythic_eligible(collection, addr)
+    public fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
+        table::contains(&collection.mythic_eligible_list, addr)
     }
 
-    public fun has_minted_public(collection: &BeelieversCollection, addr: address): bool {
-        has_minted(collection, addr)
+    public fun has_minted(collection: &BeelieversCollection, addr: address): bool {
+        table::contains(&collection.minted_addresses, addr)
     }
 
     public fun get_minter_badges(collection: &BeelieversCollection, addr: address): vector<u64> {
@@ -818,4 +634,44 @@ module beelievers_mint::mint {
     }
 
 
+    //
+    // Helper functions
+    //
+
+    /// creates a boolean vector of size `size` with all elements set to false.
+    public fun create_boolean_vector(size: u64, val: bool): vector<bool> {
+        let mut vec = vector::empty<bool>();
+        let mut i = 0;
+        while (i < size) {
+            vec.push_back(val);
+            i = i + 1;
+        };
+        vec
+    }
+
+    //
+    // TESTS
+    //
+
+    #[test]
+    fun test_create_boolean_vector() {
+        let vec = create_boolean_vector(21, false);
+        assert!(vector::length(&vec) == 21, 0);
+        let i = 0;
+        while (i < 21) {
+            assert!(vec[i] == false);
+            i = i + 1;
+        };
+        vector::destroy_empty(vec);
+
+        let vec = create_boolean_vector(5, true);
+        assert!(vector::length(&vec) == 5, 0);
+        let i = 0;
+        while (i < 5) {
+            assert!(vec[i]);
+            i = i + 1;
+        };
+        vector::destroy_empty(vec);
+
+    }
 }
