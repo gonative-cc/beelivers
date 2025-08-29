@@ -55,12 +55,18 @@ module beelievers_mint::mint {
 
     public struct BeelieversCollection has key {
         id: UID,
-        total_minted: u64,
-        mythic_minted: u64,
+        remaining_mythic: u64,
         normal_minted: u64,
-        available_nfts: vector<bool>,
+        remaining_supply: u64,
+        // vector values make a list nfts that are remaining to mint.
+        // each time we mint an NFT, we probe it from a specific index:
+        //   token_id = remaining_nfts[probe],
+        // and then swap that element in the vector with the last element and remove the last
+        // element to effectively remove that nft id from available nfts.
+        remaining_nfts: vector<u64>,
         mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
+        // amount of remaining eligible addresses to mint a mythic nft
         remaining_mythic_eligible: u64, 
         premint_completed: bool,
         minting_active: bool,
@@ -90,10 +96,10 @@ module beelievers_mint::mint {
 
         let collection = BeelieversCollection {
             id: object::new(ctx),
-            total_minted: 0,
-            mythic_minted: 0,
+            remaining_supply: TOTAL_SUPPLY,
+            remaining_mythic: MYTHIC_SUPPLY,
             normal_minted: 0,
-            available_nfts: create_boolean_vector(TOTAL_SUPPLY, true),
+            remaining_nfts: vector::tabulate!(TOTAL_SUPPLY, |i| i),
             premint_completed: false,
             minting_active: false,
             mint_start_time: 0,
@@ -440,23 +446,22 @@ module beelievers_mint::mint {
     // mints an NFT for the ctx sender
     fun mint_for_sender(
         collection: &mut BeelieversCollection,
-        token_id: u64,
+        probe_idx: u64,
         transfer_policy: &transfer_policy::TransferPolicy<BeelieverNFT>,
         kiosk: &mut kiosk::Kiosk,
         kiosk_owner_cap: &kiosk::KioskOwnerCap,
         ctx: &mut TxContext
     ) {
         let recipient = tx_context::sender(ctx);
+        let token_id = collection.remaining_nfts.swap_remove(probe_idx);
         let nft = collection.create_nft(token_id, recipient, ctx);
 
-        let elem_ref = collection.available_nfts.borrow_mut(token_id);
-        *elem_ref = false;
-
-        collection.total_minted = collection.total_minted + 1;
+        collection.remaining_supply = collection.remaining_supply - 1;
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
-            collection.mythic_minted = collection.mythic_minted + 1;
+            collection.remaining_mythic = collection.remaining_mythic - 1;
         } else {
+            // TODO: we can remove this
             collection.normal_minted = collection.normal_minted + 1;
         };
 
@@ -482,35 +487,31 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ) {
         assert!(!collection.premint_completed, EPremintAlreadyCompleted);
-        let mut generator = r.new_generator(ctx);
+        let mut g = r.new_generator(ctx);
 
         // mint NATIVE_MYTHICS to the treasury
         let mut i = 1;
         while (i <= NATIVE_MYTHICS ) {
-            // TODO we can optimize this and generate a bigger number and shift the bits
-            // NOTE: token_id starts from 1!
-            let token_id = generator.generate_u64_in_range(1, MYTHIC_SUPPLY);
-            if (collection.available_nfts[token_id]) {
-                collection.mint_for_sender(token_id, tp, kiosk, kiosk_cap, ctx);
-                i = i+1;
-            };
+            // NOTE: token_id starts from 1, and our remaining mapping also starts from idx 1.
+            let probe = g.generate_u64_in_range(1, collection.remaining_mythic);
+            collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
+            i = i+1;
         };
 
         // mint NATIVE_NORMALS to the treasury
         i = 1;
+        let start_normal = collection.remaining_mythic+1;
         while (i <= NATIVE_NORMALS ) {
-            let token_id = generator.generate_u64_in_range(MYTHIC_SUPPLY+1, TOTAL_SUPPLY);
-            if (collection.available_nfts[token_id]) {
-                collection.mint_for_sender(token_id, tp, kiosk, kiosk_cap, ctx);
-                i = i+1;
-            };
+            let probe = g.generate_u64_in_range(start_normal, collection.remaining_supply);
+            collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
+            i = i+1;
         };
 
         collection.premint_completed = true;
         // TODO: we don't need this event,
         // maybe we can have an event to display minted NFTs, but we already have them above
         event::emit(PremintCompleted {
-            mythics_minted: collection.mythic_minted,
+            mythics_minted: collection.remaining_mythic,
             normals_minted: collection.normal_minted,
             timestamp: 0,
         });
@@ -535,30 +536,22 @@ module beelievers_mint::mint {
         assert!(collection.minting_active, EMintingNotActive);
         assert!(current_time >= collection.mint_start_time, EMintingNotActive);
         assert!(!has_minted(collection, sender), EAlreadyMinted);
-        assert!(collection.total_minted < TOTAL_SUPPLY, EInsufficientSupply);
+        assert!(collection.remaining_supply > 0, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
-        let (is_eligible, can_mythic) = determine_mint_eligibility(collection, sender, auction);
+        let (is_eligible, can_mythic) = collection.determine_mint_eligibility(sender, auction);
         assert!(is_eligible, EUnauthorized);
 
-        let mut generator = random.new_generator(ctx);
-        let start = if (can_mythic) 1 else MYTHIC_SUPPLY+1;
-        let remaining_mythics = MYTHIC_SUPPLY - collection.mythic_minted;
+        let remaining_mythic = collection.remaining_mythic;
+        let start = if (can_mythic) 1 else remaining_mythic+1;
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
         // they mint mythic
-        let end = if (can_mythic && remaining_mythics <= collection.remaining_mythic_eligible)
-            MYTHIC_SUPPLY else TOTAL_SUPPLY;
-        let mut token_id = generator.generate_u64_in_range(start, end);
-        // iterate until we find available NFT
-        while (!collection.available_nfts[token_id]) {
-            token_id = token_id + 1;
-            if ( token_id > MYTHIC_SUPPLY ) {
-                token_id = start;
-            }
-        };
+        let end = if (can_mythic && remaining_mythic <= collection.remaining_mythic_eligible)
+            remaining_mythic else collection.remaining_supply;
 
-        collection.mint_for_sender(token_id, transfer_policy, kiosk, kiosk_owner_cap, ctx);
+        let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
+        collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
         collection.minted_addresses.add(sender, true);
     }
 
@@ -576,8 +569,9 @@ module beelievers_mint::mint {
         (auction::is_winner(auction, sender), false)
     }
 
+    /// returns: (total_minted, mythic_minted, normal_minted)
     public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
-        (c.total_minted, c.mythic_minted, c.normal_minted)
+        (TOTAL_SUPPLY - c.remaining_supply, MYTHIC_SUPPLY - c.remaining_mythic, c.normal_minted)
     }
 
     public fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
