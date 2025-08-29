@@ -66,8 +66,8 @@ module beelievers_mint::mint {
         remaining_nfts: vector<u64>,
         mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
-        // amount of remaining eligible addresses to mint a mythic nft
-        remaining_mythic_eligible: u64, 
+        // amount of remaining addresses eligible to mint a mythic nft
+        remaining_mythic_eligible: u64,
         premint_completed: bool,
         minting_active: bool,
         mint_start_time: u64,
@@ -549,10 +549,12 @@ module beelievers_mint::mint {
         // they mint mythic
         let end = if (can_mythic && remaining_mythic <= collection.remaining_mythic_eligible)
             remaining_mythic else collection.remaining_supply;
-
         let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
         collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
+
         collection.minted_addresses.add(sender, true);
+        if (can_mythic)
+            collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
     }
 
     /// returns (is_auction_winner, can_mint_mythic)
