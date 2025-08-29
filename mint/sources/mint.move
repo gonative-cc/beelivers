@@ -100,9 +100,8 @@ module beelievers_mint::mint {
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_mythic_eligible: 0, 
-            //TODO: change to production auction contract
-            auction_contract: @0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41,
-            treasury_address: @0xa30212c91b8fea7b494d47709d97be5774eee1e20c3515a88ec5684283b4430b,
+            auction_contract: @beelivers_auction,
+            treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             minter_badges: table::new<address, vector<u64>>(ctx),
             badge_names: table::new<u64, String>(ctx),
@@ -643,13 +642,7 @@ module beelievers_mint::mint {
 
     /// creates a boolean vector of size `size` with all elements set to false.
     public fun create_boolean_vector(size: u64, val: bool): vector<bool> {
-        let mut vec = vector::empty<bool>();
-        let mut i = 0;
-        while (i < size) {
-            vec.push_back(val);
-            i = i + 1;
-        };
-        vec
+        vector::tabulate!(size, |_| val)
     }
 
     //
@@ -660,7 +653,7 @@ module beelievers_mint::mint {
     fun test_create_boolean_vector() {
         let vec = create_boolean_vector(21, false);
         assert!(vector::length(&vec) == 21, 0);
-        let i = 0;
+        let mut i = 0;
         while (i < 21) {
             assert!(vec[i] == false);
             i = i + 1;
@@ -669,12 +662,11 @@ module beelievers_mint::mint {
 
         let vec = create_boolean_vector(5, true);
         assert!(vector::length(&vec) == 5, 0);
-        let i = 0;
+        i = 0;
         while (i < 5) {
             assert!(vec[i]);
             i = i + 1;
         };
         vector::destroy_empty(vec);
-
     }
 }
