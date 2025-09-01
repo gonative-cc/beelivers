@@ -523,7 +523,7 @@ module beelievers_mint::mint {
 
         let mut i = 0;
         while (i < num) {
-            collection.mint_for_sender(end-i, tp, kiosk, kiosk_cap, ctx);
+            collection.mint_for_sender(end - i, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
     }
@@ -547,7 +547,7 @@ module beelievers_mint::mint {
         assert!(current_time >= collection.mint_start_time, EMintingNotActive);
         assert!(!has_minted(collection, sender), EAlreadyMinted);
         // index 0 is not used, so we need >= 1
-        assert!(end >= 2, EInsufficientSupply);
+        assert!(end >= 1, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
         let (is_eligible, can_mythic) = collection.determine_mint_eligibility(sender, auction);
@@ -584,7 +584,7 @@ module beelievers_mint::mint {
 
     /// returns: (total_minted, mythic_minted, normal_minted)
     public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
-        let total_minted = TOTAL_SUPPLY - c.remaining_nfts.length()-1;
+        let total_minted = TOTAL_SUPPLY - (c.remaining_nfts.length()-1);
         let mythic_minted = MYTHIC_SUPPLY - c.remaining_mythic;
         (total_minted, mythic_minted, total_minted - mythic_minted)
     }
