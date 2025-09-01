@@ -1,4 +1,4 @@
-//@author - null
+//@author - native and deadlabs
 #[allow(lint(public_random))]
 module beelievers_mint::mint {
     use sui::clock::{Self, Clock};
@@ -106,7 +106,7 @@ module beelievers_mint::mint {
             mint_start_time: 0,
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
-            remaining_mythic_eligible: 0, 
+            remaining_mythic_eligible: 0,
             auction_contract: @beelivers_auction,
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
@@ -145,7 +145,7 @@ module beelievers_mint::mint {
     ): BeelieverNFT {
         let mut name = string::utf8(b"Beelievers #");
         string::append(&mut name, u64_to_string(token_id));
-        
+
 
         let attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
             *table::borrow<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)
@@ -220,12 +220,12 @@ module beelievers_mint::mint {
         let mut i = 0;
         while (i < vector::length(&mythic_eligible)) {
             let eligible = *vector::borrow(&mythic_eligible, i);
-            
+
             if (!table::contains(&collection.mythic_eligible_list, eligible)) {
                 table::add(&mut collection.mythic_eligible_list, eligible, true);
                 collection.remaining_mythic_eligible = collection.remaining_mythic_eligible + 1;
             };
-            
+
             i = i + 1;
         };
     }
@@ -237,7 +237,7 @@ module beelievers_mint::mint {
         start_time: u64
     ) {
         assert!(collection.premint_completed, EPremintNotCompleted);
-        
+
         collection.minting_active = true;
         collection.mint_start_time = start_time;
 
@@ -289,7 +289,7 @@ module beelievers_mint::mint {
             } else {
                 table::add(&mut collection.preset_badges, addr, badge_list);
             };
-            
+
             index = index + 1;
         };
     }
@@ -306,13 +306,13 @@ module beelievers_mint::mint {
         while (index < vector::length(&badge_ids)) {
             let badge_id = *vector::borrow(&badge_ids, index);
             let badge_name = *vector::borrow(&badge_names, index);
-            
+
             if (table::contains(&collection.badge_names, badge_id)) {
                 *table::borrow_mut(&mut collection.badge_names, badge_id) = badge_name;
             } else {
                 table::add(&mut collection.badge_names, badge_id, badge_name);
             };
-            
+
             index = index + 1;
         };
     }
@@ -451,13 +451,20 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ) {
         let recipient = tx_context::sender(ctx);
-        let token_id = collection.remaining_nfts.swap_remove(probe_idx);
+        let token_id = collection.remaining_nfts[probe_idx];
         let nft = collection.create_nft(token_id, recipient, ctx);
 
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
             collection.remaining_mythic = collection.remaining_mythic - 1;
+            let last_mythic_idx = collection.remaining_mythic-1;
+            if (probe_idx != last_mythic_idx)
+                collection.remaining_nfts.swap(probe_idx, last_mythic_idx);
+            collection.remaining_nfts.swap_remove(last_mythic_idx);
+        } else {
+            collection.remaining_nfts.swap_remove(probe_idx);
         };
+
 
         event::emit(NFTMinted {
             nft_id: object::id(&nft),
@@ -487,7 +494,9 @@ module beelievers_mint::mint {
         let mut i = 1;
         while (i <= NATIVE_MYTHICS ) {
             // NOTE: indexes for available tokens start from 0
+	    //
             let probe = g.generate_u64_in_range(0, collection.remaining_mythic-1);
+	    // std::debug::print(&probe);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
@@ -576,7 +585,7 @@ module beelievers_mint::mint {
         sender: address,
         auction: &Auction,
     ): (bool, bool) {
-      
+
         if (is_mythic_eligible(collection, sender)) {
             return (true, true)
         };
@@ -620,7 +629,7 @@ module beelievers_mint::mint {
         if (table::contains(&collection.displayable_badges, badge_name)) {
             *table::borrow(&collection.displayable_badges, badge_name)
         } else {
-            false 
+            false
         }
     }
 
@@ -679,4 +688,30 @@ module beelievers_mint::mint {
             i = i + 1;
         };
     }
+
+    // #[test_only]
+    // fun init_for_testing(ctx: &mut TxContext): MINT {
+    // 	let witness = MINT {};
+    // 	init(witness, ctx);
+    // 	return witness;
+    // }
+    #[test_only]
+    public(package) fun witness_for_test(): MINT {
+	return MINT {}
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(otw: MINT, ctx: &mut TxContext) {
+	init(otw, ctx);
+    }
+    #[test_only]
+    public(package) fun nft_id(e: &NFTMinted): ID {
+	e.nft_id
+    }
+
+    #[test_only]
+    public(package) fun token_id(e: &NFTMinted): u64 {
+	e.token_id
+    }
+
 }
