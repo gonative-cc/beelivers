@@ -18,7 +18,7 @@ module beelievers_mint::mint {
     const TOTAL_SUPPLY: u64 = 6021;
     const MYTHIC_SUPPLY: u64 = 21;
     const NORMAL_SUPPLY: u64 = 6000;
-    const NATIVE_MYTHICS: u64 = 10;
+    const NATIVE_MYTHICS: u64 = 11;
     const NATIVE_NORMALS: u64 = 200;
 
     const EInsufficientSupply: u64 = 1;
