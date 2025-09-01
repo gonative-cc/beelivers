@@ -483,18 +483,18 @@ module beelievers_mint::mint {
         // mint NATIVE_MYTHICS to the treasury
         let mut i = 1;
         while (i <= NATIVE_MYTHICS ) {
-            // NOTE: token_id starts from 1, and our remaining mapping also starts from idx 1.
-            let probe = g.generate_u64_in_range(1, collection.remaining_mythic);
+            // NOTE: indexes for available tokens start from 0
+            let probe = g.generate_u64_in_range(0, collection.remaining_mythic-1);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
 
         // mint NATIVE_NORMALS to the treasury
         i = 1;
-        let start_normal = collection.remaining_mythic+1;
+        let start_normal = collection.remaining_mythic;
         let remaining_nfts = collection.remaining_nfts.length();
         while (i <= NATIVE_NORMALS ) {
-            // NOTE: i must start from 1 to make end-i correct
+            // NOTE: i must start from 1 to make `remaining_nfts-i` correct
             let probe = g.generate_u64_in_range(start_normal, remaining_nfts-i);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
@@ -553,12 +553,12 @@ module beelievers_mint::mint {
         assert!(is_eligible, EUnauthorized);
 
         let remaining_mythic = collection.remaining_mythic;
-        let start = if (can_mythic) 0 else remaining_mythic+1;
+        let start = if (can_mythic) 0 else remaining_mythic;
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
-        // they mint mythic
+        // they mint mythic. Note: start / end indexes start from 0.
         let end = if (can_mythic && remaining_mythic <= collection.remaining_mythic_eligible)
-            remaining_mythic else remaining_nfts-1;
+            remaining_mythic-1 else remaining_nfts-1;
         let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
         collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
 
