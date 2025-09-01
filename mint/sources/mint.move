@@ -25,6 +25,7 @@ module beelievers_mint::mint {
     const EMintingNotActive: u64 = 2;
     const EUnauthorized: u64 = 3;
     const EAlreadyMinted: u64 = 4;
+    const ESetupNotFinished: u64 = 5;
     const EInvalidQuantity: u64 = 6;
     const EInvalidTokenId: u64 = 7;
     const EPremintNotCompleted: u64 = 8;
@@ -193,7 +194,6 @@ module beelievers_mint::mint {
         }
     }
 
-    // REVIEW: should use string method
     fun u64_to_string(value: u64): String {
         if (value == 0) {
             return string::utf8(b"0")
@@ -211,23 +211,18 @@ module beelievers_mint::mint {
         string::utf8(buffer)
     }
 
-    // REVIEW: should be called before minting
+    // NOTE: this must be called before minting
     public entry fun add_mythic_eligible(
         _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
+        c: &mut BeelieversCollection,
         mythic_eligible: vector<address>
     ) {
-        let mut i = 0;
-        while (i < vector::length(&mythic_eligible)) {
-            let eligible = *vector::borrow(&mythic_eligible, i);
-            
-            if (!table::contains(&collection.mythic_eligible_list, eligible)) {
-                table::add(&mut collection.mythic_eligible_list, eligible, true);
-                collection.remaining_mythic_eligible = collection.remaining_mythic_eligible + 1;
+        mythic_eligible.do!(|e| {
+            if (!c.mythic_eligible_list.contains(e)) {
+                c.mythic_eligible_list.add(e, true);
+                c.remaining_mythic_eligible = c.remaining_mythic_eligible + 1;
             };
-            
-            i = i + 1;
-        };
+        })
     }
 
 
@@ -237,7 +232,8 @@ module beelievers_mint::mint {
         start_time: u64
     ) {
         assert!(collection.premint_completed, EPremintNotCompleted);
-        
+        assert!(collection.mythic_eligible_list.length() > 0, ESetupNotFinished);
+
         collection.minting_active = true;
         collection.mint_start_time = start_time;
 
