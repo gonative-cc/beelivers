@@ -8,7 +8,7 @@ module beelievers_mint::mint {
     use sui::table::{Self, Table};
     use std::string::{Self, String};
     use sui::url::{Self, Url};
-    use sui::random::{Self, Random};
+    use sui::random::{Random};
     use sui::transfer_policy;
     use sui::kiosk;
     use sui::vec_map::{Self, VecMap};
@@ -67,13 +67,19 @@ module beelievers_mint::mint {
         minting_active: bool,
         mint_start_time: u64,
         auction_contract: address,
+        // REVIEW: this is not used
         treasury_address: address,
+        /// mapping from token_id -> NFT attributes
         nft_metadata: Table<u64, VecMap<String, String>>,
-        minter_badges: Table<address, vector<u64>>,
-        // REVIEW: since this is a small list (only 21 entries), it should be vector.
-        badge_names: Table<u64, String>,
-        displayable_badges: Table<String, bool>,
+        // REVIEW: probably we should put it in the nft_metadata
+        /// mapping from token_id -> image url
         preset_urls: Table<u64, Url>,
+        /// badges setup during the initial mint, by the minter address
+        preset_badges: Table<address, vector<u32>>,
+        // REVIEW: since this is a small list (only 21 entries), it should be vector.
+        /// mapping from badge_id (number) to badge name
+        badge_names: Table<u32, String>,
+        displayable_badges: Table<String, bool>,
     }
 
     public struct BeelieverNFT has store, key {
@@ -104,10 +110,10 @@ module beelievers_mint::mint {
             auction_contract: @beelivers_auction,
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
-            minter_badges: table::new<address, vector<u64>>(ctx),
-            badge_names: table::new<u64, String>(ctx),
+            preset_urls: table::new<u64, Url>(ctx),
+            preset_badges: table::new<address, vector<u32>>(ctx),
+            badge_names: table::new<u32, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
-            preset_urls: table::new<u64, Url>(ctx)
         };
 
         let _admin_cap = AdminCap { id: object::new(ctx) };
@@ -154,15 +160,15 @@ module beelievers_mint::mint {
             url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
         };
 
-        let badge_numbers = if (table::contains<address, vector<u64>>(&collection.minter_badges, minter)) {
-            *table::borrow<address, vector<u64>>(&collection.minter_badges, minter)
+        let badge_numbers = if (collection.preset_badges.contains(minter)) {
+            collection.preset_badges[minter]
         } else {
-            vector::empty<u64>()
+            vector::empty<u32>()
         };
 
         let mut badges = vector::empty<String>();
         let mut i = 0;
-        while (i < vector::length(&badge_numbers)) {
+        while (i < badge_numbers.length()) {
             let badge_num = *vector::borrow(&badge_numbers, i);
             let badge_name = badge_number_to_name(collection, badge_num);
             vector::push_back(&mut badges, badge_name);
@@ -179,9 +185,9 @@ module beelievers_mint::mint {
         }
     }
 
-    fun badge_number_to_name(collection: &BeelieversCollection, badge_num: u64): String {
-        if (table::contains(&collection.badge_names, badge_num)) {
-            *table::borrow(&collection.badge_names, badge_num)
+    fun badge_number_to_name(collection: &BeelieversCollection, badge_id: u32): String {
+        if (collection.badge_names.contains(badge_id)) {
+            *table::borrow(&collection.badge_names, badge_id)
         } else {
             string::utf8(b"unknown_badge")
         }
@@ -263,11 +269,11 @@ module beelievers_mint::mint {
         collection.premint_completed = completed;
     }
 
-    public entry fun set_bulk_minter_badges(
+    public entry fun set_bulk_preset_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         addresses: vector<address>,
-        badges: vector<vector<u64>>
+        badges: vector<vector<u32>>
     ) {
         assert!(vector::length(&addresses) == vector::length(&badges), EInvalidQuantity);
 
@@ -276,16 +282,12 @@ module beelievers_mint::mint {
             let addr = *vector::borrow(&addresses, index);
             let badge_list = *vector::borrow(&badges, index);
 
-            if (table::contains(&collection.minter_badges, addr)) {
-                let mut existing_badges = *table::borrow(&collection.minter_badges, addr);
-                let mut i = 0;
-                while (i < vector::length(&badge_list)) {
-                    vector::push_back(&mut existing_badges, *vector::borrow(&badge_list, i));
-                    i = i + 1;
-                };
-                *table::borrow_mut(&mut collection.minter_badges, addr) = existing_badges;
+            if (table::contains(&collection.preset_badges, addr)) {
+                let mut existing_badges = *table::borrow(&collection.preset_badges, addr);
+                existing_badges.append(badge_list);
+                *table::borrow_mut(&mut collection.preset_badges, addr) = existing_badges;
             } else {
-                table::add(&mut collection.minter_badges, addr, badge_list);
+                table::add(&mut collection.preset_badges, addr, badge_list);
             };
             
             index = index + 1;
@@ -295,7 +297,7 @@ module beelievers_mint::mint {
     public entry fun set_bulk_badge_names(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        badge_ids: vector<u64>,
+        badge_ids: vector<u32>,
         badge_names: vector<String>
     ) {
         assert!(vector::length(&badge_ids) == vector::length(&badge_names), EInvalidQuantity);
@@ -328,20 +330,21 @@ module beelievers_mint::mint {
         };
     }
 
+    // REVIEW: this doesn't work, because post mint badge is not handled here.
     public entry fun add_post_mint_minter_badge(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         addr: address,
-        badge: u64,
+        badge: u32,
     ) {
-        if (table::contains(&collection.minter_badges, addr)) {
-            let mut badges = *table::borrow(&collection.minter_badges, addr);
-            vector::push_back(&mut badges, badge);
-            *table::borrow_mut(&mut collection.minter_badges, addr) = badges;
+        if (table::contains(&collection.preset_badges, addr)) {
+            let mut badges = *table::borrow(&collection.preset_badges, addr);
+            badges.push_back(badge);
+            *table::borrow_mut(&mut collection.preset_badges, addr) = badges;
         } else {
-            let mut badges = vector::empty<u64>();
-            vector::push_back(&mut badges, badge);
-            table::add(&mut collection.minter_badges, addr, badges);
+            let mut badges = vector::empty<u32>();
+            badges.push_back(badge);
+            table::add(&mut collection.preset_badges, addr, badges);
         };
     }
 
@@ -597,16 +600,16 @@ module beelievers_mint::mint {
         table::contains(&collection.minted_addresses, addr)
     }
 
-    public fun get_minter_badges(collection: &BeelieversCollection, addr: address): vector<u64> {
-        if (table::contains(&collection.minter_badges, addr)) {
-            *table::borrow(&collection.minter_badges, addr)
+    public fun get_preset_badges(collection: &BeelieversCollection, addr: address): vector<u32> {
+        if (collection.preset_badges.contains(addr)) {
+            collection.preset_badges[addr]
         } else {
-            vector::empty<u64>()
+            vector::empty<u32>()
         }
     }
 
-    public fun get_badge_name(collection: &BeelieversCollection, badge_id: u64): String {
-        if (table::contains(&collection.badge_names, badge_id)) {
+    public fun get_badge_name(collection: &BeelieversCollection, badge_id: u32): String {
+        if (collection.badge_names.contains(badge_id)) {
             *table::borrow(&collection.badge_names, badge_id)
         } else {
             string::utf8(b"unknown_badge")
