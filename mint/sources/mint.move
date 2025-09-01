@@ -30,6 +30,8 @@ module beelievers_mint::mint {
     const EPremintNotCompleted: u64 = 8;
     const EPremintAlreadyCompleted: u64 = 9;
     const EWrongAuctionContract: u64 = 10;
+    const EPostMintNotActive: u64 = 11;
+    const EInvalidIndex: u64 = 12;
 
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
@@ -49,6 +51,8 @@ module beelievers_mint::mint {
 
     public struct BeelieversCollection has key {
         id: UID,
+        /// Unix time in ms, when admin can claim not minted tokens back to the treasury.
+        postmint_start: u64,
         remaining_mythic: u64,
         remaining_supply: u64,
         // vector values make a list nfts that are remaining to mint.
@@ -89,6 +93,7 @@ module beelievers_mint::mint {
 
         let collection = BeelieversCollection {
             id: object::new(ctx),
+            postmint_start: 1760054400000, // October 10, 2025 00:00:00 UTC.
             remaining_supply: TOTAL_SUPPLY,
             remaining_mythic: MYTHIC_SUPPLY,
             remaining_nfts: vector::tabulate!(TOTAL_SUPPLY+1, |i| i),
@@ -499,7 +504,30 @@ module beelievers_mint::mint {
         collection.premint_completed = true;
     }
 
-    // TODO: we should allow admin to mint not minted tokens after some time
+    /// Allows admint to claim not minted NFTs to the admin treasury.
+    /// `num` is the amount of NFTs admin will try to claim. Claim wil start from the last index
+    /// in the `remaining_nfts` and keep poping from the end.
+    public fun postmint_to_native(
+        _admin_cap: &AdminCap,
+        collection: &mut BeelieversCollection,
+        num: u64,
+        tp: &transfer_policy::TransferPolicy<BeelieverNFT>,
+        kiosk: &mut kiosk::Kiosk,
+        kiosk_cap: &kiosk::KioskOwnerCap,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        let current_time = clock::timestamp_ms(clock);
+        assert!(collection.postmint_start <= current_time, EPostMintNotActive);
+        assert!(num <= collection.remaining_supply, EInvalidIndex);
+
+        let mut i = 0;
+        while (i < num) {
+            let probe = collection.remaining_supply;
+            collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
+            i = i+1;
+        };
+    }
 
     public entry fun mint(
         collection: &mut BeelieversCollection,
