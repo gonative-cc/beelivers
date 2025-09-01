@@ -31,7 +31,6 @@ module beelievers_mint::mint {
     const EPremintAlreadyCompleted: u64 = 9;
     const EWrongAuctionContract: u64 = 10;
     const EPostMintNotActive: u64 = 11;
-    const EInvalidIndex: u64 = 12;
 
     public struct NFTMinted has copy, drop {
         nft_id: object::ID,
@@ -519,10 +518,10 @@ module beelievers_mint::mint {
         let current_time = clock::timestamp_ms(clock);
         let end = collection.remaining_nfts.length();
         assert!(collection.postmint_start <= current_time, EPostMintNotActive);
-        assert!(num <= end, EInvalidIndex);
+        assert!(num > 0 && num < end, EInsufficientSupply);
 
-        let mut i = 0;
-        while (i < num) {
+        let mut i = 1;
+        while (i <= num) {
             collection.mint_for_sender(end - i, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
@@ -541,13 +540,12 @@ module beelievers_mint::mint {
     ) {
         let sender = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
-        let end = collection.remaining_nfts.length()-1;
 
         assert!(collection.minting_active, EMintingNotActive);
         assert!(current_time >= collection.mint_start_time, EMintingNotActive);
         assert!(!has_minted(collection, sender), EAlreadyMinted);
-        // index 0 is not used, so we need >= 1
-        assert!(end >= 1, EInsufficientSupply);
+        // index 0 is not used, so we need >= 2
+        assert!(collection.remaining_nfts.length() >= 2, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
         let (is_eligible, can_mythic) = collection.determine_mint_eligibility(sender, auction);
@@ -584,6 +582,7 @@ module beelievers_mint::mint {
 
     /// returns: (total_minted, mythic_minted, normal_minted)
     public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
+        // remaining_nfts[0] is not used!
         let total_minted = TOTAL_SUPPLY - (c.remaining_nfts.length()-1);
         let mythic_minted = MYTHIC_SUPPLY - c.remaining_mythic;
         (total_minted, mythic_minted, total_minted - mythic_minted)
