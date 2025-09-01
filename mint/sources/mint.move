@@ -76,6 +76,9 @@ module beelievers_mint::mint {
         preset_urls: Table<u64, Url>,
         /// badges setup during the initial mint, by the minter address
         preset_badges: Table<address, vector<u32>>,
+        /// map of the token_id -> final set of badges. This is when we want to update
+        /// NFT in the future and attach new badges
+        future_badges: Table<u64, vector<u32>>,
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
@@ -112,6 +115,7 @@ module beelievers_mint::mint {
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             preset_urls: table::new<u64, Url>(ctx),
             preset_badges: table::new<address, vector<u32>>(ctx),
+            future_badges: table::new<u64, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
         };
@@ -330,23 +334,35 @@ module beelievers_mint::mint {
         };
     }
 
-    // REVIEW: this doesn't work, because post mint badge is not handled here.
-    public entry fun add_post_mint_minter_badge(
+    public entry fun add_future_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        addr: address,
-        badge: u32,
+        token_id: u64,
+        badges: vector<u32>,
     ) {
-        if (table::contains(&collection.preset_badges, addr)) {
-            let mut badges = *table::borrow(&collection.preset_badges, addr);
-            badges.push_back(badge);
-            *table::borrow_mut(&mut collection.preset_badges, addr) = badges;
+        if (collection.future_badges.contains(token_id)) {
+            // TODO: test if this works
+            // TODO: check duplications
+            let mut existing = table::borrow_mut(&mut collection.future_badges, token_id);
+            existing.append(badges);
         } else {
-            let mut badges = vector::empty<u32>();
-            badges.push_back(badge);
-            table::add(&mut collection.preset_badges, addr, badges);
+            table::add(&mut collection.future_badges, token_id, badges);
         };
     }
+
+    /// allows owner of the NFT to upsert new budges
+    public entry fun upsert_nft_badges(nft: &mut BeelieverNFT, c: &BeelieversCollection) {
+        if (!c.future_badges.contains(nft.token_id))
+            return;
+        c.future_badges[nft.token_id].do!(|b| {
+            let name = c.badge_names[b];
+            if (!nft.badges.contains(&name))
+                nft.badges.push_back(name);
+        });
+    }
+
+
+
 
     public entry fun set_nft_url(
         _admin_cap: &AdminCap,
