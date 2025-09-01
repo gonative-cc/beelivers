@@ -451,12 +451,18 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ) {
         let recipient = tx_context::sender(ctx);
-        let token_id = collection.remaining_nfts.swap_remove(probe_idx);
+        let token_id = collection.remaining_nfts[probe_idx];
         let nft = collection.create_nft(token_id, recipient, ctx);
 
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
             collection.remaining_mythic = collection.remaining_mythic - 1;
+            let last_mythic_idx = collection.remaining_mythic-1;
+            if (probe_idx != last_mythic_idx)
+                collection.remaining_nfts.swap(probe_idx, last_mythic_idx);
+            collection.remaining_nfts.swap_remove(last_mythic_idx);
+        } else {
+            collection.remaining_nfts.swap_remove(probe_idx);
         };
 
         event::emit(NFTMinted {
