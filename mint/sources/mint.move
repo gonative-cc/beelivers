@@ -91,7 +91,7 @@ module beelievers_mint::mint {
             id: object::new(ctx),
             remaining_supply: TOTAL_SUPPLY,
             remaining_mythic: MYTHIC_SUPPLY,
-            remaining_nfts: vector::tabulate!(TOTAL_SUPPLY, |i| i),
+            remaining_nfts: vector::tabulate!(TOTAL_SUPPLY+1, |i| i),
             premint_completed: false,
             minting_active: false,
             mint_start_time: 0,
