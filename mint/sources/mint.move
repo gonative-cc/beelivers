@@ -74,8 +74,8 @@ module beelievers_mint::mint {
         // REVIEW: probably we should put it in the nft_metadata
         /// mapping from token_id -> image url
         preset_urls: Table<u64, Url>,
-        /// badges setup during the initial mint
-        minter_badges: Table<address, vector<u32>>,
+        /// badges setup during the initial mint, by the minter address
+        preset_badges: Table<address, vector<u32>>,
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
@@ -111,7 +111,7 @@ module beelievers_mint::mint {
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             preset_urls: table::new<u64, Url>(ctx),
-            minter_badges: table::new<address, vector<u32>>(ctx),
+            preset_badges: table::new<address, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
         };
@@ -160,8 +160,8 @@ module beelievers_mint::mint {
             url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
         };
 
-        let badge_numbers = if (collection.minter_badges.contains(minter)) {
-            collection.minter_badges[minter]
+        let badge_numbers = if (collection.preset_badges.contains(minter)) {
+            collection.preset_badges[minter]
         } else {
             vector::empty<u32>()
         };
@@ -269,7 +269,7 @@ module beelievers_mint::mint {
         collection.premint_completed = completed;
     }
 
-    public entry fun set_bulk_minter_badges(
+    public entry fun set_bulk_preset_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         addresses: vector<address>,
@@ -282,12 +282,12 @@ module beelievers_mint::mint {
             let addr = *vector::borrow(&addresses, index);
             let badge_list = *vector::borrow(&badges, index);
 
-            if (table::contains(&collection.minter_badges, addr)) {
-                let mut existing_badges = *table::borrow(&collection.minter_badges, addr);
+            if (table::contains(&collection.preset_badges, addr)) {
+                let mut existing_badges = *table::borrow(&collection.preset_badges, addr);
                 existing_badges.append(badge_list);
-                *table::borrow_mut(&mut collection.minter_badges, addr) = existing_badges;
+                *table::borrow_mut(&mut collection.preset_badges, addr) = existing_badges;
             } else {
-                table::add(&mut collection.minter_badges, addr, badge_list);
+                table::add(&mut collection.preset_badges, addr, badge_list);
             };
             
             index = index + 1;
@@ -337,14 +337,14 @@ module beelievers_mint::mint {
         addr: address,
         badge: u32,
     ) {
-        if (table::contains(&collection.minter_badges, addr)) {
-            let mut badges = *table::borrow(&collection.minter_badges, addr);
+        if (table::contains(&collection.preset_badges, addr)) {
+            let mut badges = *table::borrow(&collection.preset_badges, addr);
             badges.push_back(badge);
-            *table::borrow_mut(&mut collection.minter_badges, addr) = badges;
+            *table::borrow_mut(&mut collection.preset_badges, addr) = badges;
         } else {
             let mut badges = vector::empty<u32>();
             badges.push_back(badge);
-            table::add(&mut collection.minter_badges, addr, badges);
+            table::add(&mut collection.preset_badges, addr, badges);
         };
     }
 
@@ -600,9 +600,9 @@ module beelievers_mint::mint {
         table::contains(&collection.minted_addresses, addr)
     }
 
-    public fun get_minter_badges(collection: &BeelieversCollection, addr: address): vector<u32> {
-        if (collection.minter_badges.contains(addr)) {
-            collection.minter_badges[addr]
+    public fun get_preset_badges(collection: &BeelieversCollection, addr: address): vector<u32> {
+        if (collection.preset_badges.contains(addr)) {
+            collection.preset_badges[addr]
         } else {
             vector::empty<u32>()
         }
