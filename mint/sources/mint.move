@@ -553,7 +553,7 @@ module beelievers_mint::mint {
         assert!(is_eligible, EUnauthorized);
 
         let remaining_mythic = collection.remaining_mythic;
-        let start = if (can_mythic) 1 else remaining_mythic+1;
+        let start = if (can_mythic) 0 else remaining_mythic+1;
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
         // they mint mythic
