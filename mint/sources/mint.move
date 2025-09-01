@@ -518,7 +518,7 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ) {
         let current_time = clock::timestamp_ms(clock);
-        assert!(collection.postmint_start >= current_time, EPostMintNotActive);
+        assert!(collection.postmint_start <= current_time, EPostMintNotActive);
         assert!(num <= collection.remaining_supply, EInvalidIndex);
 
         let mut i = 0;
