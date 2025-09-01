@@ -496,7 +496,6 @@ module beelievers_mint::mint {
             // NOTE: indexes for available tokens start from 0
 	    //
             let probe = g.generate_u64_in_range(0, collection.remaining_mythic-1);
-	    // std::debug::print(&probe);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
