@@ -334,24 +334,24 @@ module beelievers_mint::mint {
         };
     }
 
-    public entry fun add_future_badges(
+    /// Admin to set new badges to be upserted by an NFT owner.
+    public fun add_future_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         token_id: u64,
         badges: vector<u32>,
     ) {
         if (collection.future_badges.contains(token_id)) {
-            // TODO: test if this works
-            // TODO: check duplications
-            let mut existing = table::borrow_mut(&mut collection.future_badges, token_id);
-            existing.append(badges);
+            let existing = table::borrow_mut(&mut collection.future_badges, token_id);
+            badges.do!(|b|
+                if (!existing.contains(&b)) existing.push_back(b));
         } else {
             table::add(&mut collection.future_badges, token_id, badges);
         };
     }
 
-    /// allows owner of the NFT to upsert new budges
-    public entry fun upsert_nft_badges(nft: &mut BeelieverNFT, c: &BeelieversCollection) {
+    /// Allows NFT owner to upsert new budges
+    public fun upsert_nft_badges(c: &BeelieversCollection, nft: &mut BeelieverNFT) {
         if (!c.future_badges.contains(nft.token_id))
             return;
         c.future_badges[nft.token_id].do!(|b| {
@@ -360,8 +360,6 @@ module beelievers_mint::mint {
                 nft.badges.push_back(name);
         });
     }
-
-
 
 
     public entry fun set_nft_url(
@@ -400,7 +398,10 @@ module beelievers_mint::mint {
             index = index + 1;
         };
     }
-      public entry fun set_bulk_nft_attributes(
+
+
+    /// see set_nft_attributes documentation
+    public entry fun set_bulk_nft_attributes(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         nft_ids: vector<u64>,
@@ -455,9 +456,7 @@ module beelievers_mint::mint {
         };
     }
 
-    // TODO: needs an ability to add new badges in the future, without overwriting.
-
-    // mints an NFT for the ctx sender
+    /// mints an NFT for the ctx sender
     fun mint_for_sender(
         collection: &mut BeelieversCollection,
         probe_idx: u64,
