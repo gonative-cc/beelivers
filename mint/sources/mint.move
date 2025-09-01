@@ -93,7 +93,8 @@ module beelievers_mint::mint {
             id: object::new(ctx),
             postmint_start: 1760054400000, // October 10, 2025 00:00:00 UTC.
             remaining_mythic: MYTHIC_SUPPLY,
-            remaining_nfts: vector::tabulate!(TOTAL_SUPPLY+1, |i| i),
+            // NOTE: token IDs start from 1.
+            remaining_nfts: vector::tabulate!(TOTAL_SUPPLY, |i| i+1),
             premint_completed: false,
             minting_active: false,
             mint_start_time: 0,
@@ -482,19 +483,19 @@ module beelievers_mint::mint {
         // mint NATIVE_MYTHICS to the treasury
         let mut i = 1;
         while (i <= NATIVE_MYTHICS ) {
-            // NOTE: token_id starts from 1, and our remaining mapping also starts from idx 1.
-            let probe = g.generate_u64_in_range(1, collection.remaining_mythic);
+            // NOTE: indexes for available tokens start from 0
+            let probe = g.generate_u64_in_range(0, collection.remaining_mythic-1);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
 
         // mint NATIVE_NORMALS to the treasury
         i = 1;
-        let start_normal = collection.remaining_mythic+1;
-        let end = collection.remaining_nfts.length();
+        let start_normal = collection.remaining_mythic;
+        let remaining_nfts = collection.remaining_nfts.length();
         while (i <= NATIVE_NORMALS ) {
-            // NOTE: i must start from 1 to make end-i correct
-            let probe = g.generate_u64_in_range(start_normal, end-i);
+            // NOTE: i must start from 1 to make `remaining_nfts-i` correct
+            let probe = g.generate_u64_in_range(start_normal, remaining_nfts-i);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
@@ -516,13 +517,13 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ) {
         let current_time = clock::timestamp_ms(clock);
-        let end = collection.remaining_nfts.length();
+        let remaining_nfts = collection.remaining_nfts.length();
         assert!(collection.postmint_start <= current_time, EPostMintNotActive);
-        assert!(num > 0 && num < end, EInsufficientSupply);
+        assert!(num > 0 && num < remaining_nfts, EInsufficientSupply);
 
         let mut i = 1;
         while (i <= num) {
-            collection.mint_for_sender(end - i, tp, kiosk, kiosk_cap, ctx);
+            collection.mint_for_sender(remaining_nfts - i, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
     }
@@ -540,24 +541,24 @@ module beelievers_mint::mint {
     ) {
         let sender = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
+        let remaining_nfts = collection.remaining_nfts.length();
 
         assert!(collection.minting_active, EMintingNotActive);
         assert!(current_time >= collection.mint_start_time, EMintingNotActive);
         assert!(!has_minted(collection, sender), EAlreadyMinted);
-        // index 0 is not used, so we need >= 2
-        assert!(collection.remaining_nfts.length() >= 2, EInsufficientSupply);
+        assert!(remaining_nfts >= 1, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
 
         let (is_eligible, can_mythic) = collection.determine_mint_eligibility(sender, auction);
         assert!(is_eligible, EUnauthorized);
 
         let remaining_mythic = collection.remaining_mythic;
-        let start = if (can_mythic) 1 else remaining_mythic+1;
+        let start = if (can_mythic) 0 else remaining_mythic;
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
-        // they mint mythic
+        // they mint mythic. Note: start / end indexes start from 0.
         let end = if (can_mythic && remaining_mythic <= collection.remaining_mythic_eligible)
-            remaining_mythic else end;
+            remaining_mythic-1 else remaining_nfts-1;
         let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
         collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
 
@@ -583,7 +584,7 @@ module beelievers_mint::mint {
     /// returns: (total_minted, mythic_minted, normal_minted)
     public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
         // remaining_nfts[0] is not used!
-        let total_minted = TOTAL_SUPPLY - (c.remaining_nfts.length()-1);
+        let total_minted = TOTAL_SUPPLY - c.remaining_nfts.length();
         let mythic_minted = MYTHIC_SUPPLY - c.remaining_mythic;
         (total_minted, mythic_minted, total_minted - mythic_minted)
     }
