@@ -2,26 +2,6 @@
 
 This directory contains the Beelievers NFT minting contract and complete setup infrastructure for both testnet and mainnet deployment.
 
-## 📁 Directory Structure
-
-```
-mint/
-├── sources/
-│   └── mint.move              # Main minting contract
-├── tests/
-│   └── mint_tests.move        # Contract tests
-├── setup_script.js            # Complete setup automation
-├── beelievers_script.js       # Additional utility scripts
-├── mythic_eligible.txt        # Mythic eligible addresses (3978 addresses)
-├── badges.json               # Badge assignments for addresses
-├── badge_names.json          # Badge ID to name mappings
-├── imagelinks.json           # NFT token ID to image URL mappings
-├── JSON/                     # Individual NFT metadata files (6021 files)
-├── Move.toml                 # Move package configuration
-├── package.json              # Node.js dependencies
-└── README.md                 # This file
-```
-
 ## 🏗️ Contract Overview
 
 ### Key Features
@@ -35,18 +15,21 @@ mint/
 - **Premint System**: Controlled premint for specific ranges
 - **Metadata Management**: Comprehensive NFT metadata and URL management
 
-### Contract Constants
-
-```move
-const TOTAL_SUPPLY: u64 = 6021;
-const MYTHIC_SUPPLY: u64 = 21;
-const NORMAL_SUPPLY: u64 = 6000;
-const NATIVE_MYTHICS: u64 = 10;
-```
-
 ## 🚀 Setup Script Usage
 
+### Dependencies
+
+See the parent [../README](../README.md#dependencies)
+
 ### Quick Start
+
+Setup:
+
+```sh
+bun install
+```
+
+Run scripts
 
 ```bash
 # Test environment setup
@@ -78,7 +61,7 @@ node setup_script.js production --skip-minting
 
 - **Purpose**: Contains addresses eligible for mythic NFT minting
 - **Format**: One address per line (with or without 0x prefix)
-- **Count**: 3,978 addresses
+- **Count**: 3,977 addresses
 - **Usage**: Production environment reads this file
 
 ### 2. `badges.json`
