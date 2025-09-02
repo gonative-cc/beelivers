@@ -24,6 +24,7 @@ async function readProcessedBadges(filePath: string): Promise<Map<string, number
     if (!line.trim()) continue;
     
     try {
+
       const firstCommaIndex = line.indexOf(',');
       if (firstCommaIndex === -1) continue;
       
@@ -48,7 +49,7 @@ function generateWinnersJson(addressBadgeMap: Map<string, number[]>): WinnersJso
       badges: badges
     };
     
-    // Add attributes field only if the address has top_21 badge 
+    // Add attributes field only if the address has top_21 badge (4)
     if (badges.includes(4)) {
       winnerData.attributes = {
         position: "top_21"
@@ -72,9 +73,9 @@ async function main() {
   console.log("Generating winners JSON...");
   const winnersJson = generateWinnersJson(addressBadgeMap);
   
-  // Count how many have top_21 badge
+  // Count how many have top_21 badge (4)
   const top21Count = Object.values(winnersJson).filter(winner => winner.attributes?.position === "top_21").length;
-  console.log(`${top21Count} bidders have top_21 badge (ranks 1-21)`);
+  console.log(`${top21Count} bidders have top_21 attributes`);
   
   console.log("Writing JSON file...");
   const jsonContent = JSON.stringify(winnersJson, null, 2);

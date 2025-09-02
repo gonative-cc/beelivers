@@ -103,69 +103,59 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
   return bidders.map(bidder => {
     const badges = new Set(bidder.badges.filter(badge => !excludedBadges.has(badge)));
     
-    // Rank-based badges
     if (bidder.rank === 1) {
-      badges.add(Badge.first_place);
+      badges.add(Badge.first_place);        // 1
+    } else if (bidder.rank >= 2 && bidder.rank <= 3) {
+      badges.add(Badge.top_3);              // 2
+    } else if (bidder.rank >= 4 && bidder.rank <= 10) {
+      badges.add(Badge.top_10);             // 3
+    } else if (bidder.rank >= 22 && bidder.rank <= 100) {
+      badges.add(Badge.top_100);            // 5
+    } else if (bidder.rank >= 101 && bidder.rank <= 5810) {
+      badges.add(Badge.top_5810);           // 6
     }
-    if (bidder.rank >= 1 && bidder.rank <= 3) {
-      badges.add(Badge.top_3);
-    }
-    if (bidder.rank >= 1 && bidder.rank <= 10) {
-      badges.add(Badge.top_10);
-    }
+
+    // ALL ranks 1-21 get the top_21 badge
     if (bidder.rank >= 1 && bidder.rank <= 21) {
-      badges.add(Badge.top_21);
+      badges.add(Badge.top_21);             // 4
     }
-    if (bidder.rank >= 1 && bidder.rank <= 100) {
-      badges.add(Badge.top_100);
-    }
-    if (bidder.rank >= 1 && bidder.rank <= 5810) {
-      badges.add(Badge.top_5810);
-    }
-    
-    // Position-based badges
+
+    // Position-based badges 
     if (bidder.rank % 10 === 0) {
-      badges.add(Badge.every_10th_position);
+      badges.add(Badge.every_10th_position);    
     }
     if (bidder.rank % 21 === 0) {
-      badges.add(Badge.nbtc_every_21st_bidder);
+      badges.add(Badge.nbtc_every_21st_bidder); 
     }
-    
-    // Last bid badge
+
+    // Last bid badge 
     if (bidder.timestamp === latestTimestamp) {
-      badges.add(Badge.last_bid);
+      badges.add(Badge.last_bid);               
     }
-    
-    // Bid count badges
-    if (bidder.bids >= 2) {
-      badges.add(Badge.made_2_bids);
-    }
-    if (bidder.bids >= 3) {
-      badges.add(Badge.made_3_bids);
-    }
-    if (bidder.bids >= 4) {
-      badges.add(Badge.made_4_bids);
-    }
-    if (bidder.bids >= 5) {
-      badges.add(Badge.made_5_bids);
-    }
-    if (bidder.bids >= 10) {
-      badges.add(Badge.made_10_bids);
-    }
+
+    // Bid count badges 
     if (bidder.bids >= 20) {
       badges.add(Badge.made_20_bids);
+    } else if (bidder.bids >= 10) {
+      badges.add(Badge.made_10_bids);      
+    } else if (bidder.bids >= 5) {
+      badges.add(Badge.made_5_bids);       
+    } else if (bidder.bids >= 4) {
+      badges.add(Badge.made_4_bids);       
+    } else if (bidder.bids >= 3) {
+      badges.add(Badge.made_3_bids);       
+    } else if (bidder.bids >= 2) {
+      badges.add(Badge.made_2_bids);       
     }
-    
+
     // Bid amount badges 
-    const bidAmountInSui = bidder.amount / 1e9; 
-    if (bidAmountInSui >= 3) {
-      badges.add(Badge.bid_over_3);
-    }
-    if (bidAmountInSui >= 5) {
-      badges.add(Badge.bid_over_5);
-    }
+    const bidAmountInSui = bidder.amount / 1e9;
     if (bidAmountInSui >= 10) {
-      badges.add(Badge.bid_over_10);
+      badges.add(Badge.bid_over_10);        
+    } else if (bidAmountInSui >= 5) {
+      badges.add(Badge.bid_over_5);         
+    } else if (bidAmountInSui >= 3) {
+      badges.add(Badge.bid_over_3);         
     }
     
     // Highest bid badge
