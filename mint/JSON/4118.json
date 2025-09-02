@@ -1,6 +1,6 @@
 {
   "name": "Beeliever #4118",
-  "description": "A unique Beeliever from the Packman family",
+  "description": "A unique Beeliever from the Pacman family",
   "image": "4118.png",
   "attributes": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "trait_type": "Family",
-      "value": "Packman"
+      "value": "Pacman"
     },
     {
       "trait_type": "Side Appearance",
