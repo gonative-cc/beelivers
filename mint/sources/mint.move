@@ -335,18 +335,18 @@ module beelievers_mint::mint {
     }
 
     /// Admin to set new badges to be upserted by an NFT owner.
-    public fun add_future_badges(
+    public fun set_future_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        token_id: u64,
+        nft_id: u64,
         badges: vector<u32>,
     ) {
-        if (collection.future_badges.contains(token_id)) {
-            let existing = table::borrow_mut(&mut collection.future_badges, token_id);
-            badges.do!(|b|
-                if (!existing.contains(&b)) existing.push_back(b));
+        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
+
+        if (collection.future_badges.contains(nft_id)) {
+            *table::borrow_mut(&mut collection.future_badges, nft_id) = badges;
         } else {
-            table::add(&mut collection.future_badges, token_id, badges);
+            table::add(&mut collection.future_badges, nft_id, badges);
         };
     }
 
