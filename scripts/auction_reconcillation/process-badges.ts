@@ -54,7 +54,7 @@ async function readCSVData(filePath: string): Promise<BidderData[]> {
 }
 
 function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
-	return bidders.map(bidder => {
+	return bidders.map((bidder) => {
 		const badges = new Set<number>();
 
 		if (bidder.rank === 1) {
@@ -97,8 +97,8 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 			badges.add(Badge.made_2_bids);
 		}
 
-		// Bid amount badges 
-		const bidAmountInSui = bidder.boostedAmount / 1000000000; 
+		// Bid amount badges
+		const bidAmountInSui = bidder.boostedAmount / 1000000000;
 		if (bidAmountInSui >= 10) {
 			badges.add(Badge.bid_over_10);
 		} else if (bidAmountInSui >= 5) {
@@ -129,7 +129,7 @@ async function main() {
 	console.log(`Loaded ${bidders.length} bidders`);
 
 	console.log("Filtering to first 5810 bidders...");
-	const first5810Bidders = bidders.filter(bidder => bidder.rank <= 5810);
+	const first5810Bidders = bidders.filter((bidder) => bidder.rank <= 5810);
 	console.log(`Filtered to ${first5810Bidders.length} winners`);
 
 	console.log("Processing and cleaning badges...");
