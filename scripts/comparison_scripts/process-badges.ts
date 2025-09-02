@@ -191,8 +191,8 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 }
 
 async function main() {
-  const inputFile = "/Users/rayanecharif/gonative/beelivers/scripts/comparison_scripts/db-with-badges.csv";
-  const outputFile = "/Users/rayanecharif/gonative/beelivers/scripts/comparison_scripts/processed-badges.csv";
+  const inputFile = "scripts/comparison_scripts/db-with-badges.csv";
+  const outputFile = "scripts/comparison_scripts/processed-badges.csv";
   
   console.log("Reading CSV data...");
   const bidders = await readCSVData(inputFile);
