@@ -111,7 +111,7 @@ module beelievers_mint::mint {
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_mythic_eligible: 0, 
-            auction_contract: @beelivers_auction,
+            auction_contract: @auction_addr,
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             preset_urls: table::new<u64, Url>(ctx),
