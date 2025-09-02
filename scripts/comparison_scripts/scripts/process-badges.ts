@@ -2,7 +2,7 @@
 
 import { parse } from "csv-parse";
 import { promises as fs } from "fs";
-import { writeToFile } from "../fileio.ts";
+import { writeToFile } from "../../fileio.ts";
 
 enum Badge {
   first_place = 1,
@@ -191,8 +191,8 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 }
 
 async function main() {
-  const inputFile = "scripts/comparison_scripts/db-with-badges.csv";
-  const outputFile = "scripts/comparison_scripts/processed-badges.csv";
+  const inputFile = "scripts/comparison_scripts/data/db-with-badges.csv";
+  const outputFile = "scripts/comparison_scripts/output/processed-badges.csv";
   
   console.log("Reading CSV data...");
   const bidders = await readCSVData(inputFile);

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { promises as fs } from "fs";
-import { writeToFile } from "../fileio.ts";
+import { writeToFile } from "../../fileio.ts";
 
 interface WinnerData {
   attributes?: {
@@ -62,8 +62,8 @@ function generateWinnersJson(addressBadgeMap: Map<string, number[]>): WinnersJso
 }
 
 async function main() {
-  const inputFile = "scripts/comparison_scripts/processed-badges.csv";
-  const outputFile = "scripts/comparison_scripts/winners.json";
+  const inputFile = "scripts/comparison_scripts/output/processed-badges.csv";
+  const outputFile = "scripts/comparison_scripts/output/winners.json";
   
   console.log("Reading processed badge data...");
   const addressBadgeMap = await readProcessedBadges(inputFile);
