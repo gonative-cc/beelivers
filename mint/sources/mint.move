@@ -77,6 +77,9 @@ module beelievers_mint::mint {
         preset_urls: Table<u64, Url>,
         /// badges setup during the initial mint, by the minter address
         preset_badges: Table<address, vector<u32>>,
+        /// map of the token_id -> final set of badges. This is when we want to update
+        /// NFT in the future and attach new badges
+        future_badges: Table<u64, vector<u32>>,
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
@@ -113,6 +116,7 @@ module beelievers_mint::mint {
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             preset_urls: table::new<u64, Url>(ctx),
             preset_badges: table::new<address, vector<u32>>(ctx),
+            future_badges: table::new<u64, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
             displayable_badges: table::new<String, bool>(ctx),
         };
@@ -326,23 +330,33 @@ module beelievers_mint::mint {
         };
     }
 
-    // REVIEW: this doesn't work, because post mint badge is not handled here.
-    public entry fun add_post_mint_minter_badge(
+    /// Admin to set new badges to be upserted by an NFT owner.
+    public fun set_future_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        addr: address,
-        badge: u32,
+        nft_id: u64,
+        badges: vector<u32>,
     ) {
-        if (table::contains(&collection.preset_badges, addr)) {
-            let mut badges = *table::borrow(&collection.preset_badges, addr);
-            badges.push_back(badge);
-            *table::borrow_mut(&mut collection.preset_badges, addr) = badges;
+        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
+
+        if (collection.future_badges.contains(nft_id)) {
+            *table::borrow_mut(&mut collection.future_badges, nft_id) = badges;
         } else {
-            let mut badges = vector::empty<u32>();
-            badges.push_back(badge);
-            table::add(&mut collection.preset_badges, addr, badges);
+            table::add(&mut collection.future_badges, nft_id, badges);
         };
     }
+
+    /// Allows NFT owner to upsert new budges
+    public fun upsert_nft_badges(c: &BeelieversCollection, nft: &mut BeelieverNFT) {
+        if (!c.future_badges.contains(nft.token_id))
+            return;
+        c.future_badges[nft.token_id].do!(|b| {
+            let name = c.badge_names[b];
+            if (!nft.badges.contains(&name))
+                nft.badges.push_back(name);
+        });
+    }
+
 
     public entry fun set_nft_url(
         _admin_cap: &AdminCap,
@@ -380,7 +394,10 @@ module beelievers_mint::mint {
             index = index + 1;
         };
     }
-      public entry fun set_bulk_nft_attributes(
+
+
+    /// see set_nft_attributes documentation
+    public entry fun set_bulk_nft_attributes(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         nft_ids: vector<u64>,
@@ -435,9 +452,7 @@ module beelievers_mint::mint {
         };
     }
 
-    // TODO: needs an ability to add new badges in the future, without overwriting.
-
-    // mints an NFT for the ctx sender
+    /// mints an NFT for the ctx sender
     fun mint_for_sender(
         collection: &mut BeelieversCollection,
         probe_idx: u64,
