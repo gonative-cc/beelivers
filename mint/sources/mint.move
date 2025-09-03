@@ -49,6 +49,15 @@ module beelievers_mint::mint {
         id: UID,
     }
 
+    public struct NftMetadata has store {
+        url: Url,
+        attrs: VecMap<String, String>
+    }
+
+    public(package) fun empty_metadata(): NftMetadata{
+        NftMetadata {attrs: vec_map::empty<String, String>(), url: url::new_unsafe_from_bytes(b"")}
+    }
+
     public struct AttrBadge has store {
         name: String,
         id: u32 // badge ID
@@ -76,11 +85,8 @@ module beelievers_mint::mint {
         auction_contract: address,
         // REVIEW: this is not used
         treasury_address: address,
-        /// mapping from token_id -> NFT attributes. Prunned on mint.
-        nft_metadata: Table<u64, VecMap<String, String>>,
-        // REVIEW: probably we should put it in the nft_metadata
-        /// mapping from token_id -> image url. Prunned on mint.
-        preset_urls: Table<u64, Url>,
+        /// mapping by token_id. Prunned on mint.
+        nft_metadata: Table<u64, NftMetadata>,
         /// badges setup during the initial mint, by the minter address. Prunned on mint.
         preset_badges: Table<address, vector<u32>>,
         /// map of the token_id -> final set of badges. This is when we want to update
@@ -121,8 +127,7 @@ module beelievers_mint::mint {
             remaining_mythic_eligible: 0, 
             auction_contract: @auction_addr,
             treasury_address: @treasury_address,
-            nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
-            preset_urls: table::new<u64, Url>(ctx),
+            nft_metadata: table::new<u64, NftMetadata>(ctx),
             preset_badges: table::new<address, vector<u32>>(ctx),
             future_badges: table::new<u64, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
@@ -162,17 +167,10 @@ module beelievers_mint::mint {
         string::append(&mut name, u64_to_string(token_id));
         
 
-        let mut attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
+        let NftMetadata {url, mut attrs} = if (collection.nft_metadata.contains(token_id)) {
             collection.nft_metadata.remove(token_id)
         } else {
-            vec_map::empty<String, String>()
-        };
-
-        let image_url = if (table::contains<u64, Url>(&collection.preset_urls, token_id)) {
-            collection.preset_urls.remove(token_id)
-        } else {
-            let default_url_string = string::utf8(b"");
-            url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
+            empty_metadata()
         };
 
         let badge_ids = if (collection.preset_badges.contains(minter)) {
@@ -191,7 +189,7 @@ module beelievers_mint::mint {
 
             collection.attribute_badges.do_ref!(|ab| {
                 if (ab.id == b)
-                    attributes.insert(ab.name, badge_name);
+                    attrs.insert(ab.name, badge_name);
             });
 
             i = i + 1;
@@ -200,8 +198,8 @@ module beelievers_mint::mint {
         BeelieverNFT {
             id: object::new(ctx),
             name,
-            image_url,
-            attributes,
+            image_url: url,
+            attributes: attrs,
             token_id,
             badges,
         }
@@ -370,12 +368,14 @@ module beelievers_mint::mint {
     ) {
         assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
 
-        let nft_url = url::new_unsafe_from_bytes(url_bytes);
+        let url = url::new_unsafe_from_bytes(url_bytes);
 
-        if (table::contains(&collection.preset_urls, nft_id)) {
-            *table::borrow_mut(&mut collection.preset_urls, nft_id) = nft_url;
+        if (collection.nft_metadata.contains(nft_id)) {
+            let mut m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
+            m.url = url;
         } else {
-            table::add(&mut collection.preset_urls, nft_id, nft_url);
+            let mut m = NftMetadata {attrs: vec_map::empty<String, String>(), url};
+            table::add(&mut collection.nft_metadata, nft_id, m);
         };
     }
 
@@ -449,10 +449,13 @@ module beelievers_mint::mint {
             index = index + 1;
         };
 
-        if (table::contains(&collection.nft_metadata, nft_id)) {
-            *table::borrow_mut(&mut collection.nft_metadata, nft_id) = attributes_map;
+        if (collection.nft_metadata.contains(nft_id)) {
+            let mut m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
+            m.attrs = attributes_map;
         } else {
-            table::add(&mut collection.nft_metadata, nft_id, attributes_map);
+            let mut m = empty_metadata();
+            m.attrs = attributes_map;
+            table::add(&mut collection.nft_metadata, nft_id, m);
         };
     }
 
