@@ -474,11 +474,11 @@ module beelievers_mint::mint {
 
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
-            collection.remaining_mythic = collection.remaining_mythic - 1;
             let last_mythic_idx = collection.remaining_mythic-1;
             if (probe_idx != last_mythic_idx)
                 collection.remaining_nfts.swap(probe_idx, last_mythic_idx);
             collection.remaining_nfts.swap_remove(last_mythic_idx);
+            collection.remaining_mythic = collection.remaining_mythic - 1;
         } else {
             collection.remaining_nfts.swap_remove(probe_idx);
         };
