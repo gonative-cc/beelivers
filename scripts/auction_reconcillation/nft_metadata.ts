@@ -21,7 +21,7 @@ async function readProcessedBadges(filePath: string): Promise<Map<string, number
 
 	for (let i = 1; i < lines.length; i++) {
 		const line = lines[i];
-		if (!line.trim()) continue;
+		if (!line?.trim()) continue;
 
 		try {
 			const firstCommaIndex = line.indexOf(",");
