@@ -32,7 +32,6 @@ enum Badge {
 	dethrone = 26,
 }
 
-
 interface BidderData {
 	bidder: string;
 	amount: number;
