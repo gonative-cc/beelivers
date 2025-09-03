@@ -60,6 +60,7 @@ module beelievers_mint::mint {
         // and then swap that element in the vector with the last element and remove the last
         // element to effectively remove that nft id from available nfts.
         remaining_nfts: vector<u64>,
+        // TODO: after mint, we should remove from this list.
         mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
         // amount of remaining addresses eligible to mint a mythic nft
@@ -83,6 +84,7 @@ module beelievers_mint::mint {
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
+        // REVIEW: this is not used
         displayable_badges: Table<String, bool>,
     }
 
