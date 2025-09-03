@@ -48,17 +48,21 @@ async function readCSVData(filePath: string): Promise<BidderData[]> {
 	const records: BidderData[] = [];
 
 	const data = await new Promise<any[]>((resolve, reject) => {
-		parse(fileContent, {
-			columns: true,
-			skip_empty_lines: true,
-			trim: true,
-		}, (err, data) => {
-			if (err) {
-				reject(err);
-				return;
-			}
-			resolve(data);
-		});
+		parse(
+			fileContent,
+			{
+				columns: true,
+				skip_empty_lines: true,
+				trim: true,
+			},
+			(err, data) => {
+				if (err) {
+					reject(err);
+					return;
+				}
+				resolve(data);
+			},
+		);
 	});
 
 	for (const row of data) {
@@ -83,11 +87,11 @@ async function readCSVData(filePath: string): Promise<BidderData[]> {
 }
 
 function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
-	const excludedBadges = new Set([6, 14]); 
+	const excludedBadges = new Set([6, 14]);
 
-	return bidders.map(bidder => {
+	return bidders.map((bidder) => {
 		//  existing badges, filtered
-		const badges = new Set(bidder.badges.filter(badge => !excludedBadges.has(badge)));
+		const badges = new Set(bidder.badges.filter((badge) => !excludedBadges.has(badge)));
 
 		// Rank-based dynamic badges
 		if (bidder.rank === 1) {
@@ -100,7 +104,6 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 			badges.add(Badge.top_100);
 		}
 
-		
 		if (bidder.rank >= 1 && bidder.rank <= 21) {
 			badges.add(Badge.top_21);
 		}
@@ -171,16 +174,15 @@ async function main() {
 
 	console.log("Generating badges JSON...");
 	const badgesJson: { [address: string]: number[] } = {};
-	
+
 	for (const bidder of sortedBidders) {
 		badgesJson[bidder.bidder] = bidder.badges;
 	}
 
-	
-	const jsonLines = Object.entries(badgesJson).map(([address, badges]) => 
-		`  "${address}": [${badges.join(',')}]`
+	const jsonLines = Object.entries(badgesJson).map(
+		([address, badges]) => `  "${address}": [${badges.join(",")}]`,
 	);
-	
+
 	const formattedJson = "{\n" + jsonLines.join(",\n") + "\n}";
 
 	const badgesJsonPath = "scripts/auction_reconcillation/badges.json";
