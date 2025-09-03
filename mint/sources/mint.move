@@ -18,13 +18,14 @@ module beelievers_mint::mint {
     const TOTAL_SUPPLY: u64 = 6021;
     const MYTHIC_SUPPLY: u64 = 21;
     const NORMAL_SUPPLY: u64 = 6000;
-    const NATIVE_MYTHICS: u64 = 10;
+    const NATIVE_MYTHICS: u64 = 11;
     const NATIVE_NORMALS: u64 = 200;
 
     const EInsufficientSupply: u64 = 1;
     const EMintingNotActive: u64 = 2;
     const EUnauthorized: u64 = 3;
     const EAlreadyMinted: u64 = 4;
+    const ESetupNotFinished: u64 = 5;
     const EInvalidQuantity: u64 = 6;
     const EInvalidTokenId: u64 = 7;
     const EPremintNotCompleted: u64 = 8;
@@ -48,6 +49,11 @@ module beelievers_mint::mint {
         id: UID,
     }
 
+    public struct AttrBadge has store {
+        name: String,
+        id: u32 // badge ID
+    }
+
     public struct BeelieversCollection has key {
         id: UID,
         /// Unix time in ms, when admin can claim not minted tokens back to the treasury.
@@ -59,6 +65,7 @@ module beelievers_mint::mint {
         // and then swap that element in the vector with the last element and remove the last
         // element to effectively remove that nft id from available nfts.
         remaining_nfts: vector<u64>,
+        // TODO: after mint, we should remove from this list.
         mythic_eligible_list: Table<address, bool>,
         minted_addresses: Table<address, bool>,
         // amount of remaining addresses eligible to mint a mythic nft
@@ -76,10 +83,15 @@ module beelievers_mint::mint {
         preset_urls: Table<u64, Url>,
         /// badges setup during the initial mint, by the minter address
         preset_badges: Table<address, vector<u32>>,
+        /// map of the token_id -> final set of badges. This is when we want to update
+        /// NFT in the future and attach new badges
+        future_badges: Table<u64, vector<u32>>,
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
-        displayable_badges: Table<String, bool>,
+        /// Badge IDs that will go be added as attributes during the mint
+        /// This is a list of pairs: attribute name, badge ID
+        attribute_badges: vector<AttrBadge>,
     }
 
     public struct BeelieverNFT has store, key {
@@ -107,13 +119,16 @@ module beelievers_mint::mint {
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
             remaining_mythic_eligible: 0,
-            auction_contract: @beelivers_auction,
+            auction_contract: @auction_addr,
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, VecMap<String, String>>(ctx),
             preset_urls: table::new<u64, Url>(ctx),
             preset_badges: table::new<address, vector<u32>>(ctx),
+            future_badges: table::new<u64, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
-            displayable_badges: table::new<String, bool>(ctx),
+            // NOTE: this is a hardcoded top_21 badge that we will add as an attribute
+            attribute_badges: vector[
+                AttrBadge{name: b"badge_rank".to_string(), id: 4}],
         };
 
         let _admin_cap = AdminCap { id: object::new(ctx) };
@@ -147,7 +162,7 @@ module beelievers_mint::mint {
         string::append(&mut name, u64_to_string(token_id));
 
 
-        let attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
+        let mut attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
             *table::borrow<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)
         } else {
             vec_map::empty<String, String>()
@@ -160,18 +175,25 @@ module beelievers_mint::mint {
             url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
         };
 
-        let badge_numbers = if (collection.preset_badges.contains(minter)) {
+        let badge_ids = if (collection.preset_badges.contains(minter)) {
             collection.preset_badges[minter]
         } else {
             vector::empty<u32>()
         };
 
+
         let mut badges = vector::empty<String>();
         let mut i = 0;
-        while (i < badge_numbers.length()) {
-            let badge_num = *vector::borrow(&badge_numbers, i);
-            let badge_name = badge_number_to_name(collection, badge_num);
+        while (i < badge_ids.length()) {
+            let b = *vector::borrow(&badge_ids, i);
+            let badge_name = badge_number_to_name(collection, b);
             vector::push_back(&mut badges, badge_name);
+
+            collection.attribute_badges.do_ref!(|ab| {
+                if (ab.id == b)
+                    attributes.insert(ab.name, badge_name);
+            });
+
             i = i + 1;
         };
 
@@ -193,7 +215,6 @@ module beelievers_mint::mint {
         }
     }
 
-    // REVIEW: should use string method
     fun u64_to_string(value: u64): String {
         if (value == 0) {
             return string::utf8(b"0")
@@ -211,23 +232,18 @@ module beelievers_mint::mint {
         string::utf8(buffer)
     }
 
-    // REVIEW: should be called before minting
+    // NOTE: this must be called before minting
     public entry fun add_mythic_eligible(
         _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
+        c: &mut BeelieversCollection,
         mythic_eligible: vector<address>
     ) {
-        let mut i = 0;
-        while (i < vector::length(&mythic_eligible)) {
-            let eligible = *vector::borrow(&mythic_eligible, i);
-
-            if (!table::contains(&collection.mythic_eligible_list, eligible)) {
-                table::add(&mut collection.mythic_eligible_list, eligible, true);
-                collection.remaining_mythic_eligible = collection.remaining_mythic_eligible + 1;
+        mythic_eligible.do!(|e| {
+            if (!c.mythic_eligible_list.contains(e)) {
+                c.mythic_eligible_list.add(e, true);
+                c.remaining_mythic_eligible = c.remaining_mythic_eligible + 1;
             };
-
-            i = i + 1;
-        };
+        })
     }
 
 
@@ -237,6 +253,7 @@ module beelievers_mint::mint {
         start_time: u64
     ) {
         assert!(collection.premint_completed, EPremintNotCompleted);
+        assert!(collection.mythic_eligible_list.length() > 0, ESetupNotFinished);
 
         collection.minting_active = true;
         collection.mint_start_time = start_time;
@@ -317,36 +334,33 @@ module beelievers_mint::mint {
         };
     }
 
-    public entry fun set_badge_displayable(
+    /// Admin to set new badges to be upserted by an NFT owner.
+    public fun set_future_badges(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
-        badge_name: String,
-        displayable: bool,
+        nft_id: u64,
+        badges: vector<u32>,
     ) {
-        if (table::contains(&collection.displayable_badges, badge_name)) {
-            *table::borrow_mut(&mut collection.displayable_badges, badge_name) = displayable;
+        assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
+
+        if (collection.future_badges.contains(nft_id)) {
+            *table::borrow_mut(&mut collection.future_badges, nft_id) = badges;
         } else {
-            table::add(&mut collection.displayable_badges, badge_name, displayable);
+            table::add(&mut collection.future_badges, nft_id, badges);
         };
     }
 
-    // REVIEW: this doesn't work, because post mint badge is not handled here.
-    public entry fun add_post_mint_minter_badge(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        addr: address,
-        badge: u32,
-    ) {
-        if (table::contains(&collection.preset_badges, addr)) {
-            let mut badges = *table::borrow(&collection.preset_badges, addr);
-            badges.push_back(badge);
-            *table::borrow_mut(&mut collection.preset_badges, addr) = badges;
-        } else {
-            let mut badges = vector::empty<u32>();
-            badges.push_back(badge);
-            table::add(&mut collection.preset_badges, addr, badges);
-        };
+    /// Allows NFT owner to upsert new budges
+    public fun upsert_nft_badges(c: &BeelieversCollection, nft: &mut BeelieverNFT) {
+        if (!c.future_badges.contains(nft.token_id))
+            return;
+        c.future_badges[nft.token_id].do!(|b| {
+            let name = c.badge_names[b];
+            if (!nft.badges.contains(&name))
+                nft.badges.push_back(name);
+        });
     }
+
 
     public entry fun set_nft_url(
         _admin_cap: &AdminCap,
@@ -384,7 +398,10 @@ module beelievers_mint::mint {
             index = index + 1;
         };
     }
-      public entry fun set_bulk_nft_attributes(
+
+
+    /// see set_nft_attributes documentation
+    public entry fun set_bulk_nft_attributes(
         _admin_cap: &AdminCap,
         collection: &mut BeelieversCollection,
         nft_ids: vector<u64>,
@@ -439,9 +456,7 @@ module beelievers_mint::mint {
         };
     }
 
-    // TODO: needs an ability to add new badges in the future, without overwriting.
-
-    // mints an NFT for the ctx sender
+    /// mints an NFT for the ctx sender
     fun mint_for_sender(
         collection: &mut BeelieversCollection,
         probe_idx: u64,
@@ -621,14 +636,6 @@ module beelievers_mint::mint {
             *table::borrow(&collection.badge_names, badge_id)
         } else {
             string::utf8(b"unknown_badge")
-        }
-    }
-
-    public fun is_badge_displayable(collection: &BeelieversCollection, badge_name: String): bool {
-        if (table::contains(&collection.displayable_badges, badge_name)) {
-            *table::borrow(&collection.displayable_badges, badge_name)
-        } else {
-            false
         }
     }
 

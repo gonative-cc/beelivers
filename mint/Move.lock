@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "0D920781CC5F91185B4803C262B6FC53E135DC4E9E272B81861284BDB93841E8"
+manifest_digest = "22CC15297D5927CEB127FED29852A2E01A76DB06EA762876B7D4CE93ACC75F95"
 deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
 dependencies = [
   { id = "Sui", name = "Sui" },
@@ -23,7 +23,7 @@ dependencies = [
 
 [[move.package]]
 id = "beelivers_auction"
-source = { git = "https://github.com/suibdev/beelievers1.git", rev = "main", subdir = "beelivers_auction" }
+source = { local = "../beelivers_auction" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
