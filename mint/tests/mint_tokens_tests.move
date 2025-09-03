@@ -9,6 +9,8 @@ use std::unit_test::{assert_eq, assert_ref_eq};
 use sui::event::events_by_type;
 use beelivers_auction::auction::{Self, Auction, create, create_admin_cap};
 
+use std::debug;
+
 const ADMIN: address = @0x1001;
 const MINER: address = @0x1002;
 
@@ -42,7 +44,7 @@ fun premint_for_native_happy_test_cases() {
 	let tp: transfer_policy::TransferPolicy<BeelieverNFT> = scenario.take_shared();
 	let r: Random = scenario.take_shared();
 
-	// 10 mythic token
+	// Mint mythic token
 	premint_to_native(&admin_cap, &mut c, &tp, &mut kiosk, &kiosk_cap, &r, scenario.ctx());
 
 	scenario.return_to_sender(admin_cap);
@@ -60,11 +62,12 @@ fun premint_for_native_happy_test_cases() {
 	let kiosk: sui::kiosk::Kiosk = scenario.take_shared();
 
 	assert_eq!(kiosk.item_count(), 211);
+
 	let mut mythic_count = 0;
 	minted_events.do!(|mint_event| {
 	    assert_eq!(kiosk.is_locked(mint_event.nft_id()), true);
 	    if (mint_event.token_id() <= 21) {
-		mythic_count = mythic_count + 1;
+		    mythic_count = mythic_count + 1;
 	    }
 	});
 

@@ -215,7 +215,7 @@ module beelievers_mint::mint {
         }
     }
 
-    fun u64_to_string(value: u64): String {
+    public(package) fun u64_to_string(value: u64): String {
         if (value == 0) {
             return string::utf8(b"0")
         };
@@ -471,17 +471,16 @@ module beelievers_mint::mint {
 
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
-	    std::debug::print(&probe_idx);
-	    std::debug::print(&vector::tabulate!(22, |i| collection.remaining_nfts[i]));
-            collection.remaining_mythic = collection.remaining_mythic - 1;
             let last_mythic_idx = collection.remaining_mythic-1;
             if (probe_idx != last_mythic_idx)
                 collection.remaining_nfts.swap(probe_idx, last_mythic_idx);
             collection.remaining_nfts.swap_remove(last_mythic_idx);
+            collection.remaining_mythic = collection.remaining_mythic - 1;
         } else {
             collection.remaining_nfts.swap_remove(probe_idx);
         };
 
+        std::debug::print(&vector[b"minting".to_string(), u64_to_string(token_id)]);
 
         event::emit(NFTMinted {
             nft_id: object::id(&nft),
@@ -517,6 +516,7 @@ module beelievers_mint::mint {
             i = i+1;
         };
 
+        std::debug::print(&b"----- premint normal ------".to_string());
         // mint NATIVE_NORMALS to the treasury
         i = 1;
         let start_normal = collection.remaining_mythic;
@@ -525,9 +525,9 @@ module beelievers_mint::mint {
             // NOTE: i must start from 1 to make `remaining_nfts-i` correct
 
             let probe = g.generate_u64_in_range(start_normal, remaining_nfts-i);
-	    if (collection.remaining_nfts[probe] <= 21) {
-		std::debug::print(&b"-------------------------");
-	    };
+            if (collection.remaining_nfts[probe] <= 21) {
+                std::debug::print(&b"#### oups".to_string());
+            };
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
