@@ -483,6 +483,6 @@ fun test_bisect_address() {
 }
 
 #[test_only]
-public(package) fun set_winners(a: &mut Auction, winners: vector<address>) {
+public fun set_winners(a: &mut Auction, winners: vector<address>) {
     a.winners = winners;
 }

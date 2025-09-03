@@ -5,7 +5,7 @@ edition = "2024.beta"
 authors = ["Native", "@null"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 beelivers_auction = { local = "../beelivers_auction/" }
 # beelivers_auction = { git = "https://github.com/gonative-cc/beelivers.git", subdir = "beelivers_auction", rev = "release/auction/v1.0" }
 
@@ -20,3 +20,5 @@ treasury_address = "0x71f544c7f7996c0f129146925e9c6a8d5e9332f7b59fd060d26c2199e7
 [dev-dependencies]
 
 [dev-addresses]
+# auction_addr = "0x5ae4810b0a0a30b5767c3da561f2fb64315167a9cfa809ad877e1f5902cb2e41"
+# treasury_address = "0x71f544c7f7996c0f129146925e9c6a8d5e9332f7b59fd060d26c2199e7532b6b"

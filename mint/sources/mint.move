@@ -15,7 +15,7 @@ module beelievers_mint::mint {
 
     use beelivers_auction::auction::{Self, Auction};
 
-    const TOTAL_SUPPLY: u64 = 6021;
+    const TOTAL_SUPPLY: u64 = 500;
     const MYTHIC_SUPPLY: u64 = 21;
     const NORMAL_SUPPLY: u64 = 6000;
     const NATIVE_MYTHICS: u64 = 11;
@@ -471,6 +471,8 @@ module beelievers_mint::mint {
 
         let is_mythic = token_id <= MYTHIC_SUPPLY;
         if (is_mythic) {
+	    std::debug::print(&probe_idx);
+	    std::debug::print(&vector::tabulate!(22, |i| collection.remaining_nfts[i]));
             collection.remaining_mythic = collection.remaining_mythic - 1;
             let last_mythic_idx = collection.remaining_mythic-1;
             if (probe_idx != last_mythic_idx)
@@ -521,7 +523,11 @@ module beelievers_mint::mint {
         let remaining_nfts = collection.remaining_nfts.length();
         while (i <= NATIVE_NORMALS ) {
             // NOTE: i must start from 1 to make `remaining_nfts-i` correct
+
             let probe = g.generate_u64_in_range(start_normal, remaining_nfts-i);
+	    if (collection.remaining_nfts[probe] <= 21) {
+		std::debug::print(&b"-------------------------");
+	    };
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
         };
@@ -720,4 +726,8 @@ module beelievers_mint::mint {
 	e.token_id
     }
 
+    #[test_only]
+    public(package) fun set_auction(c: &mut BeelieversCollection, addr: address) {
+	c.auction_contract = addr;
+    }
 }

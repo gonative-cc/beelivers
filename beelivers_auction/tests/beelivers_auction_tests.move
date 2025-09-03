@@ -76,7 +76,7 @@ fun final(
         let second_part = vector[winners[winners.length() - 1]];
         finalize_start(&admin_cap, &mut auction, first_part, &clock);
         finalize_continue(&admin_cap, &mut auction, second_part, &clock);
-        finalize_end(&admin_cap, &mut auction, clean_price, scenario.ctx());
+        finalize_end(&admin_cap, &mut auction, clean_price, 0, scenario.ctx());
 
         let mut i = 0;
         while (i < winners.length()) {
@@ -239,7 +239,7 @@ fun should_fails_when_not_admin_finalize_test() {
         clock.set_for_testing(5 * ONE_HOUR);
         let mut auction: Auction = scenario.take_shared();
         let admin_cap: AdminCap = create_admin_cap(scenario.ctx());
-        finalize_end(&admin_cap, &mut auction, 0, scenario.ctx());
+        finalize_end(&admin_cap, &mut auction, 0, 0, scenario.ctx());
     };
     abort
 }
