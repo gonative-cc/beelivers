@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
-import { readAndParseCSV } from "../csv.ts";
+import { parse } from "csv-parse";
+import { promises as fs } from "fs";
 import { writeToFile } from "../fileio.ts";
 
 enum Badge {
@@ -17,6 +18,11 @@ enum Badge {
 	made_5_bids = 13,
 	made_10_bids = 11,
 	made_20_bids = 12,
+	partner_wl = 14,
+	first_500 = 15,
+	first_1000 = 16,
+	climb_up_210 = 17,
+	climb_up_10 = 18,
 	last_bid = 20,
 	every_10th_position = 21,
 	nbtc_every_21st_bidder = 22,
@@ -27,36 +33,63 @@ enum Badge {
 }
 
 interface BidderData {
-	rank: number;
 	bidder: string;
-	boostedAmount: number;
+	amount: number;
 	timestamp: number;
-	boosted: boolean;
-	bids: number;
-	highestSingleBid: number;
+	wlStatus: number;
+	note: string;
 	badges: number[];
+	bids: number;
+	rank: number;
 }
 
 async function readCSVData(filePath: string): Promise<BidderData[]> {
-	const parser = (row: string[]) => {
-		return {
-			rank: parseInt(row[0]),
-			bidder: row[1].toLowerCase(),
-			boostedAmount: parseInt(row[2]),
-			timestamp: parseInt(row[3]),
-			boosted: row[4] === "true",
-			bids: parseInt(row[5]),
-			highestSingleBid: parseInt(row[6]),
-			badges: [], // Will be populated by processAndCleanBadges
-		};
-	};
-	return readAndParseCSV(filePath, 7, parser);
+	const fileContent = await fs.readFile(filePath, "utf-8");
+	const records: BidderData[] = [];
+
+	const data = await new Promise<any[]>((resolve, reject) => {
+		parse(fileContent, {
+			columns: true,
+			skip_empty_lines: true,
+			trim: true,
+		}, (err, data) => {
+			if (err) {
+				reject(err);
+				return;
+			}
+			resolve(data);
+		});
+	});
+
+	for (const row of data) {
+		let badges: number[] = [];
+		if (row.badges && row.badges.trim() !== "") {
+			badges = JSON.parse(row.badges);
+		}
+
+		records.push({
+			bidder: row.bidder.toLowerCase(),
+			amount: parseInt(row.amount),
+			timestamp: parseInt(row.timestamp),
+			wlStatus: parseInt(row.wlStatus),
+			note: row.note || "",
+			badges,
+			bids: parseInt(row.bids),
+			rank: parseInt(row.rank),
+		});
+	}
+
+	return records;
 }
 
 function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
-	return bidders.map((bidder) => {
-		const badges = new Set<number>();
+	const excludedBadges = new Set([6, 14]); 
 
+	return bidders.map(bidder => {
+		//  existing badges, filtered
+		const badges = new Set(bidder.badges.filter(badge => !excludedBadges.has(badge)));
+
+		// Rank-based dynamic badges
 		if (bidder.rank === 1) {
 			badges.add(Badge.first_place);
 		} else if (bidder.rank >= 2 && bidder.rank <= 3) {
@@ -67,20 +100,9 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 			badges.add(Badge.top_100);
 		}
 
-		// All ranks 1-21 get top_21 badge
+		
 		if (bidder.rank >= 1 && bidder.rank <= 21) {
 			badges.add(Badge.top_21);
-		}
-
-		if (bidder.rank % 10 === 0) {
-			badges.add(Badge.every_10th_position);
-		}
-		if (bidder.rank % 21 === 0) {
-			badges.add(Badge.nbtc_every_21st_bidder);
-		}
-
-		if (bidder.rank === 5810) {
-			badges.add(Badge.last_bid);
 		}
 
 		if (bidder.bids >= 20) {
@@ -97,18 +119,16 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 			badges.add(Badge.made_2_bids);
 		}
 
-		// Bid amount badges
-		const bidAmountInSui = bidder.boostedAmount / 1000000000;
-		if (bidAmountInSui >= 10) {
-			badges.add(Badge.bid_over_10);
-		} else if (bidAmountInSui >= 5) {
-			badges.add(Badge.bid_over_5);
-		} else if (bidAmountInSui >= 3) {
-			badges.add(Badge.bid_over_3);
+		if (bidder.rank === 5810) {
+			badges.add(Badge.last_bid);
 		}
 
-		if (bidder.rank === 1) {
-			badges.add(Badge.highest_bid);
+		if (bidder.rank % 10 === 0) {
+			badges.add(Badge.every_10th_position);
+		}
+
+		if (bidder.rank % 21 === 0) {
+			badges.add(Badge.nbtc_every_21st_bidder);
 		}
 
 		const sortedBadges = Array.from(badges).sort((a, b) => a - b);
@@ -121,7 +141,7 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 }
 
 async function main() {
-	const inputFile = "scripts/auction_reconcillation/reconcilled.csv";
+	const inputFile = "scripts/auction_reconcillation/db-with-badges.csv";
 	const outputFile = "scripts/auction_reconcillation/processed-badges.csv";
 
 	console.log("Reading CSV data...");
@@ -148,6 +168,24 @@ async function main() {
 
 	await writeToFile(outputFile, csvContent);
 	console.log("Badge processing complete!");
+
+	console.log("Generating badges JSON...");
+	const badgesJson: { [address: string]: number[] } = {};
+	
+	for (const bidder of sortedBidders) {
+		badgesJson[bidder.bidder] = bidder.badges;
+	}
+
+	
+	const jsonLines = Object.entries(badgesJson).map(([address, badges]) => 
+		`  "${address}": [${badges.join(',')}]`
+	);
+	
+	const formattedJson = "{\n" + jsonLines.join(",\n") + "\n}";
+
+	const badgesJsonPath = "scripts/auction_reconcillation/badges.json";
+	await writeToFile(badgesJsonPath, formattedJson);
+	console.log("Badges JSON generation complete!");
 }
 
 if (import.meta.main) {
