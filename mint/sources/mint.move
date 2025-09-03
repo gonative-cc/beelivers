@@ -49,6 +49,11 @@ module beelievers_mint::mint {
         id: UID,
     }
 
+    public struct AttrBadge has store {
+        name: String,
+        id: u32 // badge ID
+    }
+
     public struct BeelieversCollection has key {
         id: UID,
         /// Unix time in ms, when admin can claim not minted tokens back to the treasury.
@@ -84,8 +89,9 @@ module beelievers_mint::mint {
         // REVIEW: since this is a small list (only 21 entries), it should be vector.
         /// mapping from badge_id (number) to badge name
         badge_names: Table<u32, String>,
-        // REVIEW: this is not used
-        displayable_badges: Table<String, bool>,
+        /// Badge IDs that will go be added as attributes during the mint
+        /// This is a list of pairs: attribute name, badge ID
+        attribute_badges: vector<AttrBadge>,
     }
 
     public struct BeelieverNFT has store, key {
@@ -120,7 +126,9 @@ module beelievers_mint::mint {
             preset_badges: table::new<address, vector<u32>>(ctx),
             future_badges: table::new<u64, vector<u32>>(ctx),
             badge_names: table::new<u32, String>(ctx),
-            displayable_badges: table::new<String, bool>(ctx),
+            // NOTE: this is a hardcoded top_21 badge that we will add as an attribute
+            attribute_badges: vector[
+                AttrBadge{name: b"badge_rank".to_string(), id: 4}],
         };
 
         let _admin_cap = AdminCap { id: object::new(ctx) };
@@ -154,7 +162,7 @@ module beelievers_mint::mint {
         string::append(&mut name, u64_to_string(token_id));
         
 
-        let attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
+        let mut attributes = if (table::contains<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)) {
             *table::borrow<u64, VecMap<String, String>>(&collection.nft_metadata, token_id)
         } else {
             vec_map::empty<String, String>()
@@ -167,18 +175,25 @@ module beelievers_mint::mint {
             url::new_unsafe_from_bytes(*string::as_bytes(&default_url_string))
         };
 
-        let badge_numbers = if (collection.preset_badges.contains(minter)) {
+        let badge_ids = if (collection.preset_badges.contains(minter)) {
             collection.preset_badges[minter]
         } else {
             vector::empty<u32>()
         };
 
+
         let mut badges = vector::empty<String>();
         let mut i = 0;
-        while (i < badge_numbers.length()) {
-            let badge_num = *vector::borrow(&badge_numbers, i);
-            let badge_name = badge_number_to_name(collection, badge_num);
+        while (i < badge_ids.length()) {
+            let b = *vector::borrow(&badge_ids, i);
+            let badge_name = badge_number_to_name(collection, b);
             vector::push_back(&mut badges, badge_name);
+
+            collection.attribute_badges.do_ref!(|ab| {
+                if (ab.id == b)
+                    attributes.insert(ab.name, badge_name);
+            });
+
             i = i + 1;
         };
 
@@ -316,19 +331,6 @@ module beelievers_mint::mint {
             };
             
             index = index + 1;
-        };
-    }
-
-    public entry fun set_badge_displayable(
-        _admin_cap: &AdminCap,
-        collection: &mut BeelieversCollection,
-        badge_name: String,
-        displayable: bool,
-    ) {
-        if (table::contains(&collection.displayable_badges, badge_name)) {
-            *table::borrow_mut(&mut collection.displayable_badges, badge_name) = displayable;
-        } else {
-            table::add(&mut collection.displayable_badges, badge_name, displayable);
         };
     }
 
@@ -632,14 +634,6 @@ module beelievers_mint::mint {
             *table::borrow(&collection.badge_names, badge_id)
         } else {
             string::utf8(b"unknown_badge")
-        }
-    }
-
-    public fun is_badge_displayable(collection: &BeelieversCollection, badge_name: String): bool {
-        if (table::contains(&collection.displayable_badges, badge_name)) {
-            *table::borrow(&collection.displayable_badges, badge_name)
-        } else {
-            false 
         }
     }
 
