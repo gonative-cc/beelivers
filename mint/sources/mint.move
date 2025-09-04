@@ -15,7 +15,7 @@ module beelievers_mint::mint {
 
     use beelivers_auction::auction::{Self, Auction};
 
-    const TOTAL_SUPPLY: u64 = 500;
+    const TOTAL_SUPPLY: u64 = 6021;
     const MYTHIC_SUPPLY: u64 = 21;
     const NORMAL_SUPPLY: u64 = 6000;
     const NATIVE_MYTHICS: u64 = 11;
@@ -696,12 +696,6 @@ module beelievers_mint::mint {
         };
     }
 
-    // #[test_only]
-    // fun init_for_testing(ctx: &mut TxContext): MINT {
-    // 	let witness = MINT {};
-    // 	init(witness, ctx);
-    // 	return witness;
-    // }
     #[test_only]
     public(package) fun witness_for_test(): MINT {
 	return MINT {}

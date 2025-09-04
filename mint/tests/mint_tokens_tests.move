@@ -83,23 +83,35 @@ fun premint_for_native_happy_test_cases() {
 
     scenario = create_auction_for_testing(scenario);
 
-    let v= 500 - 211;
+    let v = 5810;
 
-   let result = vector::tabulate!(v, |i| i as u256).map!(|minter| {
+    scenario.next_tx(ADMIN);
+    {
+	let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
+	let mut auction: Auction = scenario.take_shared();
+	let mut c: mint::BeelieversCollection = scenario.take_shared();
+
+        auction.set_winners(vector::tabulate!(v, |i| i as u256).map!(|addr| sui::address::from_u256(addr)));
+	c.set_auction(object::id(&auction).to_address());
+	admin_cap.add_mythic_eligible(&mut c, vector::tabulate!(2750, |i| i as u256).map!(|addr| sui::address::from_u256(addr)));
+	admin_cap.start_minting(&mut c, 0);
+	return_shared(c);
+        return_shared(auction);
+	return_to_address(ADMIN, admin_cap);
+
+    };
+
+    let result = vector::tabulate!(5810, |i| i as u256).map!(|minter| {
         let minter_addr: address = sui::address::from_u256(minter);
+	scenario.next_tx(minter_addr);
         scenario.next_tx(minter_addr);
         {
-            let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
             let mut c: mint::BeelieversCollection = scenario.take_shared();
             let (mut kiosk, kiosk_cap) = sui::kiosk::new(scenario.ctx());
             let tp: transfer_policy::TransferPolicy<BeelieverNFT> = scenario.take_shared();
             let r: Random = scenario.take_shared();
             let clock = sui::clock::create_for_testing(scenario.ctx());
-            let mut auction: Auction = scenario.take_shared();
-            auction.set_winners(vector[minter_addr]);
-            c.set_auction(object::id(&auction).to_address());
-            admin_cap.add_mythic_eligible(&mut c, vector[minter_addr]);
-            admin_cap.start_minting(&mut c, 0);
+            let auction: Auction = scenario.take_shared();
 
             c.mint(&tp, &r, &clock, &auction, &mut kiosk, &kiosk_cap, scenario.ctx());
 
@@ -107,11 +119,10 @@ fun premint_for_native_happy_test_cases() {
             return_shared(r);
             return_shared(tp);
             return_shared(auction);
-            return_to_address(ADMIN, admin_cap);
-            sui::transfer::public_share_object(kiosk);
-            sui::transfer::public_transfer(kiosk_cap, ADMIN);
-            sui::test_utils::destroy(clock);
 
+            sui::test_utils::destroy(clock);
+	    sui::test_utils::destroy(kiosk);
+	    sui::test_utils::destroy(kiosk_cap);
 	    let events = events_by_type<NFTMinted>();
 	    assert_eq!(events.length(), 1);
 	    events[0]
