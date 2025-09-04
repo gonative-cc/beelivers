@@ -129,11 +129,11 @@ function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
 			badges.add(Badge.last_bid);
 		}
 
-		if (bidder.rank % 10 === 0) {
+		if (bidder.rank > 0 && bidder.rank % 10 === 0) {
 			badges.add(Badge.every_10th_position);
 		}
 
-		if (bidder.rank % 21 === 0) {
+		if (bidder.rank > 0 && bidder.rank % 21 === 0) {
 			badges.add(Badge.nbtc_every_21st_bidder);
 		}
 
