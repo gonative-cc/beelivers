@@ -583,7 +583,8 @@ module beelievers_mint::mint {
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
         // they mint mythic. Note: start / end indexes start from 0.
-        let end = if (can_mythic && remaining_mythic <= collection.remaining_mythic_eligible)
+        let end = if (can_mythic
+            && remaining_mythic <= collection.remaining_mythic_eligible && remaining_mythic >= 1)
             remaining_mythic-1 else remaining_nfts-1;
         let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
         collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
