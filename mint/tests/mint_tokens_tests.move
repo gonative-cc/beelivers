@@ -111,7 +111,10 @@ fun premint_for_native_happy_test_cases() {
             sui::transfer::public_share_object(kiosk);
             sui::transfer::public_transfer(kiosk_cap, ADMIN);
             sui::test_utils::destroy(clock);
-	    events_by_type<NFTMinted>()[0]
+
+	    let events = events_by_type<NFTMinted>();
+	    assert_eq!(events.length(), 1);
+	    events[0]
         }
     });
 
