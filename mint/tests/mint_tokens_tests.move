@@ -79,38 +79,38 @@ fun premint_for_native_happy_test_cases() {
     scenario = create_auction_for_testing(scenario);
 
 
-    // let v: u256= 500 - 211;
+    let v: u256= 500 - 211;
 
-    // v.do!(|minter| {
-    // 	std::debug::print(&minter);
-    // 	let minter_addr: address = sui::address::from_u256(minter);
-    // 	 scenario.next_tx(minter_addr);
-    // 	{
+    v.do!(|minter| {
+	std::debug::print(&minter);
+	let minter_addr: address = sui::address::from_u256(minter);
+	 scenario.next_tx(minter_addr);
+	{
 
-    // 	    let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
-    // 	    let mut c: mint::BeelieversCollection = scenario.take_shared();
-    // 	    let (mut kiosk, kiosk_cap) = sui::kiosk::new(scenario.ctx());
-    // 	    let tp: transfer_policy::TransferPolicy<BeelieverNFT> = scenario.take_shared();
-    // 	    let r: Random = scenario.take_shared();
-    // 	    let clock = sui::clock::create_for_testing(scenario.ctx());
-    // 	    let mut auction: Auction = scenario.take_shared();
-    // 	    auction.set_winners(vector[minter_addr]);
-    // 	    c.set_auction(object::id(&auction).to_address());
-    // 	    admin_cap.add_mythic_eligible(&mut c, vector[minter_addr]);
-    // 	    admin_cap.start_minting(&mut c, 0);
+	    let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
+	    let mut c: mint::BeelieversCollection = scenario.take_shared();
+	    let (mut kiosk, kiosk_cap) = sui::kiosk::new(scenario.ctx());
+	    let tp: transfer_policy::TransferPolicy<BeelieverNFT> = scenario.take_shared();
+	    let r: Random = scenario.take_shared();
+	    let clock = sui::clock::create_for_testing(scenario.ctx());
+	    let mut auction: Auction = scenario.take_shared();
+	    auction.set_winners(vector[minter_addr]);
+	    c.set_auction(object::id(&auction).to_address());
+	    admin_cap.add_mythic_eligible(&mut c, vector[minter_addr]);
+	    admin_cap.start_minting(&mut c, 0);
 
-    // 	    c.mint(&tp, &r, &clock, &auction, &mut kiosk,& kiosk_cap, scenario.ctx());
+	    c.mint(&tp, &r, &clock, &auction, &mut kiosk,& kiosk_cap, scenario.ctx());
 
-    // 	    return_shared(c);
-    // 	    return_shared(r);
-    // 	    return_shared(tp);
-    // 	    return_shared(auction);
-    // 	    return_to_address(ADMIN, admin_cap);
-    // 	    sui::transfer::public_share_object(kiosk);
-    // 	    sui::transfer::public_transfer(kiosk_cap, ADMIN);
-    // 	    sui::test_utils::destroy(clock);
-    // 	};
-    // });
+	    return_shared(c);
+	    return_shared(r);
+	    return_shared(tp);
+	    return_shared(auction);
+	    return_to_address(ADMIN, admin_cap);
+	    sui::transfer::public_share_object(kiosk);
+	    sui::transfer::public_transfer(kiosk_cap, ADMIN);
+	    sui::test_utils::destroy(clock);
+	};
+    });
 
 
     scenario.end();
