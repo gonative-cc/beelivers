@@ -411,34 +411,6 @@ module beelievers_mint::mint_tests {
         assert!(addr3 != @0x0, 5);
     }
 
-    #[test]
-    fun test_number_to_string_conversion() {
-        // Test the u64_to_string logic used in the contract
-        let test_numbers = vector[0u64, 1u64, 10u64, 100u64, 1000u64, 6021u64];
-        let expected_lengths = vector[1u64, 1u64, 2u64, 3u64, 4u64, 4u64];
-        
-        let mut i = 0;
-        while (i < vector::length(&test_numbers)) {
-            let num = *vector::borrow(&test_numbers, i);
-            let expected_len = *vector::borrow(&expected_lengths, i);
-            
-            // Simulate the conversion logic
-            let mut buffer = vector::empty<u8>();
-            let mut temp_value = num;
-            
-            if (temp_value == 0) {
-                vector::push_back(&mut buffer, 48u8); // '0' character
-            } else {
-                while (temp_value != 0) {
-                    vector::push_back(&mut buffer, ((temp_value % 10 + 48) as u8));
-                    temp_value = temp_value / 10;
-                };
-            };
-            
-            assert!(vector::length(&buffer) == expected_len, i);
-            i = i + 1;
-        };
-    }
 
     #[test]
     fun test_conditional_logic() {

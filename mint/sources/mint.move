@@ -164,7 +164,7 @@ module beelievers_mint::mint {
         ctx: &mut TxContext
     ): BeelieverNFT {
         let mut name = string::utf8(b"Beelievers #");
-        string::append(&mut name, u64_to_string(token_id));
+        string::append(&mut name, token_id.to_string());
         
 
         let NftMetadata {url, mut attrs} = if (collection.nft_metadata.contains(token_id)) {
@@ -213,22 +213,6 @@ module beelievers_mint::mint {
         }
     }
 
-    fun u64_to_string(value: u64): String {
-        if (value == 0) {
-            return string::utf8(b"0")
-        };
-
-        let mut buffer = vector::empty<u8>();
-        let mut temp_value = value;
-
-        while (temp_value != 0) {
-            vector::push_back(&mut buffer, ((temp_value % 10 + 48) as u8));
-            temp_value = temp_value / 10;
-        };
-
-        vector::reverse(&mut buffer);
-        string::utf8(buffer)
-    }
 
     // NOTE: this must be called before minting
     public entry fun add_mythic_eligible(
