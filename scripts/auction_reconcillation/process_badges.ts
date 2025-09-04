@@ -87,6 +87,9 @@ async function readCSVData(filePath: string): Promise<BidderData[]> {
 }
 
 function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
+	// We are excluding the non-relevant badges for the NFT: 
+	// - 6 (top_5810 - because everyone gets it)
+	// - 14 (WL - not needed for NFT)
 	const excludedBadges = new Set([6, 14]);
 
 	return bidders.map((bidder) => {
@@ -151,42 +154,29 @@ async function main() {
 	const bidders = await readCSVData(inputFile);
 	console.log(`Loaded ${bidders.length} bidders`);
 
-	console.log("Filtering to first 5810 bidders...");
-	const first5810Bidders = bidders.filter((bidder) => bidder.rank <= 5810);
-	console.log(`Filtered to ${first5810Bidders.length} winners`);
-
-	console.log("Processing and cleaning badges...");
+	console.log("Processing...");
+	const first5810Bidders = bidders.filter((b) => b.rank >= 1 && b.rank <= 5810);
 	const processedBidders = processAndCleanBadges(first5810Bidders);
-
-	console.log("Sorting by rank...");
-	const sortedBidders = processedBidders.sort((a, b) => a.rank - b.rank);
+	const sortedBidders = processedBidders.sort((b1, b2) => b1.rank - b2.rank);
 
 	console.log("Generating output CSV...");
-	let csvContent = "address,badges\n";
+	let csvLines = ["address,badges"];
 
 	for (const bidder of sortedBidders) {
 		const badgesJson = JSON.stringify(bidder.badges);
-		csvContent += `${bidder.bidder},${badgesJson}\n`;
+		csvLines.push(`${bidder.bidder},${badgesJson}`);
 	}
 
-	await writeToFile(outputFile, csvContent);
-	console.log("Badge processing complete!");
+	await writeToFile(outputFile, csvLines.join("\n"));
 
 	console.log("Generating badges JSON...");
-	const badgesJson: { [address: string]: number[] } = {};
-
+	const bidderBadges: { [address: string]: number[] } = {};
 	for (const bidder of sortedBidders) {
-		badgesJson[bidder.bidder] = bidder.badges;
+		bidderBadges[bidder.bidder] = bidder.badges;
 	}
 
-	const jsonLines = Object.entries(badgesJson).map(
-		([address, badges]) => `  "${address}": [${badges.join(",")}]`,
-	);
-
-	const formattedJson = "{\n" + jsonLines.join(",\n") + "\n}";
-
 	const badgesJsonPath = "scripts/auction_reconcillation/badges.json";
-	await writeToFile(badgesJsonPath, formattedJson);
+	await writeToFile(badgesJsonPath, JSON.stringify(bidderBadges));
 	console.log("Badges JSON generation complete!");
 }
 
