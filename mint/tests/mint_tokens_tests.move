@@ -83,10 +83,9 @@ fun premint_for_native_happy_test_cases() {
 
     scenario = create_auction_for_testing(scenario);
 
-    let v: u256 = 500 - 211;
+    let v= 500 - 211;
 
-    v.do!(|minter| {
-        std::debug::print(&minter);
+   let result = vector::tabulate!(v, |i| i as u256).map!(|minter| {
         let minter_addr: address = sui::address::from_u256(minter);
         scenario.next_tx(minter_addr);
         {
@@ -112,8 +111,23 @@ fun premint_for_native_happy_test_cases() {
             sui::transfer::public_share_object(kiosk);
             sui::transfer::public_transfer(kiosk_cap, ADMIN);
             sui::test_utils::destroy(clock);
-        };
+	    events_by_type<NFTMinted>()[0]
+        }
     });
 
+    assert_eq!(result.length(), v);
+    let mc = result.count!(|token_event| {token_event.token_id() <= 21});
+    assert_eq!(mc, 10);
+
+    let mut ids = sui::table::new<u64, bool>(scenario.ctx());
+    result.do!(|t| {
+	ids.add(t.token_id(), true)
+    });
+
+    minted_events.do!(|t| {
+	ids.add(t.token_id(), true)
+    });
+
+    sui::test_utils::destroy(ids);
     scenario.end();
 }
