@@ -87,7 +87,7 @@ async function readCSVData(filePath: string): Promise<BidderData[]> {
 }
 
 function processAndCleanBadges(bidders: BidderData[]): BidderData[] {
-	// We are excluding the non-relevant badges for the NFT: 
+	// We are excluding the non-relevant badges for the NFT:
 	// - 6 (top_5810 - because everyone gets it)
 	// - 14 (WL - not needed for NFT)
 	const excludedBadges = new Set([6, 14]);
