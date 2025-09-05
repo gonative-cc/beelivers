@@ -596,6 +596,8 @@ public fun get_collection_stats(c: &BeelieversCollection): (u64, u64, u64) {
     (total_minted, mythic_minted, total_minted - mythic_minted)
 }
 
+public fun get_supply(): vector<u64> { vector[TOTAL_SUPPLY, MYTHIC_SUPPLY, NORMAL_SUPPLY] }
+
 public fun is_mythic_eligible(collection: &BeelieversCollection, addr: address): bool {
     table::contains(&collection.mythic_eligible_list, addr)
 }
@@ -612,19 +614,8 @@ public fun get_badge_name(collection: &BeelieversCollection, badge_id: u32): Str
     }
 }
 
-public fun get_total_supply(): u64 { TOTAL_SUPPLY }
-
-public fun get_mythic_supply(): u64 { MYTHIC_SUPPLY }
-
-public fun get_normal_supply(): u64 { NORMAL_SUPPLY }
-
 public fun is_minting_active(collection: &BeelieversCollection): bool {
     collection.minting_active
-}
-
-public fun is_minting_active_with_time(collection: &BeelieversCollection, clock: &Clock): bool {
-    let current_time = clock::timestamp_ms(clock);
-    collection.minting_active && current_time >= collection.mint_start_time
 }
 
 public fun get_mint_start_time(collection: &BeelieversCollection): u64 {
