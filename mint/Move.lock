@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "03BB9BF01FCE88B958D3BBDB55A4F72B353E64FBD15CC1B6A83D10AE79EF3880"
+manifest_digest = "0AE5839C267B57FA15EAA5E1E537EDAC4CEAFD2112467AD67B2DE34EEDC5FC6F"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -48,10 +48,21 @@ id = "beelivers_auction"
 source = { local = "../beelivers_auction" }
 
 dependencies = [
+  { id = "Bridge", name = "Bridge" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
 ]
 
 [move.toolchain-version]
 compiler-version = "1.54.2"
 edition = "2024.beta"
 flavor = "sui"
+
+[env]
+
+[env.localnet]
+chain-id = "75cbe003"
+original-published-id = "0x820a9b7dfa3aebe5df024b8c77f5d50e2a30869475b855a55698d085328bf94e"
+latest-published-id = "0x820a9b7dfa3aebe5df024b8c77f5d50e2a30869475b855a55698d085328bf94e"
+published-version = "1"

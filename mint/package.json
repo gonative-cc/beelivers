@@ -3,7 +3,7 @@
   "private": true,
   "dependencies": {
     "@mysten/bcs": "^1.7.0",
-    "@mysten/kiosk": "^0.12.24",
+    "@mysten/kiosk": "^0.12.26",
     "@mysten/sui.js": "^0.54.1"
   }
 }

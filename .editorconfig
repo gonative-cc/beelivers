@@ -21,6 +21,7 @@ max_line_length = 110
 [*.json]
 indent_style = tab
 indent_size = 4
+max_line_length = 100
 
 [*.go]
 max_line_length = 100
