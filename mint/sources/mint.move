@@ -678,25 +678,25 @@ module beelievers_mint::mint {
 
     #[test_only]
     public(package) fun witness_for_test(): MINT {
-	return MINT {}
+	    return MINT {}
     }
 
     #[test_only]
     public(package) fun init_for_testing(otw: MINT, ctx: &mut TxContext) {
-	init(otw, ctx);
+	    init(otw, ctx);
     }
     #[test_only]
     public(package) fun nft_id(e: &NFTMinted): ID {
-	e.nft_id
+	    e.nft_id
     }
 
     #[test_only]
     public(package) fun token_id(e: &NFTMinted): u64 {
-	e.token_id
+	    e.token_id
     }
 
     #[test_only]
     public(package) fun set_auction(c: &mut BeelieversCollection, addr: address) {
-	c.auction_contract = addr;
+	    c.auction_contract = addr;
     }
 }
