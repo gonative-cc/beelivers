@@ -560,26 +560,40 @@ module beelievers_mint::mint {
         assert!(!has_minted(collection, sender), EAlreadyMinted);
         assert!(remaining_nfts >= 1, EInsufficientSupply);
         assert!(object::id(auction).to_address() == collection.auction_contract, EWrongAuctionContract);
-
         let (is_eligible, can_mythic) = collection.determine_mint_eligibility(sender, auction);
         assert!(is_eligible, EUnauthorized);
 
-        let remaining_mythic = collection.remaining_mythic;
+	mint_random(collection, transfer_policy, can_mythic, random, kiosk, kiosk_owner_cap, ctx);
+
+	collection.minted_addresses.add(sender, true);
+	if (can_mythic) {
+            collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
+            collection.mythic_eligible_list.remove(sender);
+        };
+    }
+
+    public(package) fun mint_random(
+	collection: &mut BeelieversCollection,
+        transfer_policy: &transfer_policy::TransferPolicy<BeelieverNFT>,
+	can_mythic: bool,
+        // REVIEW: standard objects should be at the end (so Auction should be before random etc...)
+        random: &Random,
+        kiosk: &mut kiosk::Kiosk,
+        kiosk_owner_cap: &kiosk::KioskOwnerCap,
+        ctx: &mut TxContext
+    ) {
+	let remaining_nfts = collection.remaining_nfts.length();
+	let remaining_mythic = collection.remaining_mythic;
         let start = if (can_mythic) 0 else remaining_mythic;
         // we need to make sure that mythics will be all minted to eligible users
         // so if number of eligible users gets to the remining mythics, we assure that
         // they mint mythic. Note: start / end indexes start from 0.
-        let end = if (can_mythic
-            && remaining_mythic <= collection.remaining_mythic_eligible && remaining_mythic >= 1)
+
+	let end = if (can_mythic
+            && remaining_mythic >= collection.remaining_mythic_eligible && remaining_mythic >= 1)
             remaining_mythic-1 else remaining_nfts-1;
         let probe = random.new_generator(ctx).generate_u64_in_range(start, end);
         collection.mint_for_sender(probe, transfer_policy, kiosk, kiosk_owner_cap, ctx);
-
-        collection.minted_addresses.add(sender, true);
-        if (can_mythic) {
-            collection.remaining_mythic_eligible = collection.remaining_mythic_eligible - 1;
-            collection.mythic_eligible_list.remove(sender);
-        }
     }
 
     /// returns (is_auction_winner, can_mint_mythic)
@@ -699,4 +713,12 @@ module beelievers_mint::mint {
     public(package) fun set_auction(c: &mut BeelieversCollection, addr: address) {
 	    c.auction_contract = addr;
     }
+    #[test_only]
+    public(package) fun remove_mythic_eligible(c: &mut BeelieversCollection, addr: address) {
+	if (c.mythic_eligible_list.contains(addr)) {
+	    c.remaining_mythic_eligible = c.remaining_mythic_eligible - 1;
+	    c.mythic_eligible_list.remove(addr);
+	};
+    }
+
 }
