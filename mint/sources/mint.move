@@ -12,7 +12,6 @@ use sui::package;
 use sui::random::Random;
 use sui::table::{Self, Table};
 use sui::transfer_policy;
-use sui::url::{Self, Url};
 use sui::vec_map::{Self, VecMap};
 
 const TOTAL_SUPPLY: u64 = 6021;
@@ -50,12 +49,12 @@ public struct AdminCap has key, store {
 }
 
 public struct NftMetadata has store {
-    url: Url,
+    image_id: vector<u8>,
     attrs: VecMap<String, String>,
 }
 
 public(package) fun empty_metadata(): NftMetadata {
-    NftMetadata { attrs: vec_map::empty<String, String>(), url: url::new_unsafe_from_bytes(b"") }
+    NftMetadata { attrs: vec_map::empty<String, String>(), image_id: b"" }
 }
 
 public struct AttrBadge has store {
@@ -103,7 +102,7 @@ public struct BeelieversCollection has key {
 public struct BeelieverNFT has key, store {
     id: UID,
     name: String,
-    image_url: Url,
+    image_id: vector<u8>,
     attributes: VecMap<String, String>,
     token_id: u64,
     badges: vector<String>,
@@ -148,8 +147,8 @@ fun init(witness: MINT, ctx: &mut TxContext) {
     );
     display::add(
         &mut nft_display,
-        string::utf8(b"image_url"),
-        string::utf8(b"https://walrus.tusky.io/{image_url}"),
+        string::utf8(b"image_id"),
+        string::utf8(b"https://walrus.tusky.io/{image_id}"),
     );
     display::add(&mut nft_display, string::utf8(b"attributes"), string::utf8(b"{attributes}"));
     display::add(&mut nft_display, string::utf8(b"badges"), string::utf8(b"{badges}"));
@@ -177,7 +176,7 @@ fun create_nft(
     let mut name = string::utf8(b"Beelievers #");
     string::append(&mut name, token_id.to_string());
 
-    let NftMetadata { url, mut attrs } = if (collection.nft_metadata.contains(token_id)) {
+    let NftMetadata { image_id, mut attrs } = if (collection.nft_metadata.contains(token_id)) {
         collection.nft_metadata.remove(token_id)
     } else {
         empty_metadata()
@@ -206,7 +205,7 @@ fun create_nft(
     BeelieverNFT {
         id: object::new(ctx),
         name,
-        image_url: url,
+        image_id,
         attributes: attrs,
         token_id,
         badges,
@@ -337,40 +336,38 @@ public fun upsert_nft_badges(c: &BeelieversCollection, nft: &mut BeelieverNFT) {
     });
 }
 
-public fun set_nft_url(
+public fun set_nft_image(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_id: u64,
-    url_bytes: vector<u8>,
+    image_id: vector<u8>,
 ) {
     assert!(nft_id > 0 && nft_id <= TOTAL_SUPPLY, EInvalidTokenId);
 
-    let url = url::new_unsafe_from_bytes(url_bytes);
-
     if (collection.nft_metadata.contains(nft_id)) {
         let m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
-        m.url = url;
+        m.image_id = image_id;
     } else {
-        let m = NftMetadata { attrs: vec_map::empty<String, String>(), url };
+        let m = NftMetadata { attrs: vec_map::empty<String, String>(), image_id };
         table::add(&mut collection.nft_metadata, nft_id, m);
     };
 }
 
-public fun set_bulk_nft_urls(
+public fun set_bulk_nft_images(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_ids: vector<u64>,
-    urls: vector<vector<u8>>,
+    image_ids: vector<vector<u8>>,
 ) {
-    assert!(vector::length(&nft_ids) == vector::length(&urls), EInvalidQuantity);
+    assert!(vector::length(&nft_ids) == vector::length(&image_ids), EInvalidQuantity);
 
     let mut index = 0;
     while (index < vector::length(&nft_ids)) {
-        set_nft_url(
+        set_nft_image(
             _admin_cap,
             collection,
             *vector::borrow(&nft_ids, index),
-            *vector::borrow(&urls, index),
+            *vector::borrow(&image_ids, index),
         );
         index = index + 1;
     };
