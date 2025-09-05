@@ -524,7 +524,7 @@ async function setUrlsFromJson() {
 				txb.setGasBudget(1000000000);
 
 				txb.moveCall({
-					target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_urls`,
+					target: `${config.PACKAGE_ID}::${MODULE_NAME}::set_bulk_nft_images`,
 					arguments: [
 						txb.object(config.ADMIN_CAP),
 						txb.object(config.COLLECTION_ID),
