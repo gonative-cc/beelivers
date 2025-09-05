@@ -720,4 +720,15 @@ module beelievers_mint::mint {
 	};
     }
 
+    #[test_only]
+    public(package) fun set_remaining_nfts(c: &mut BeelieversCollection, nfts: vector<u64>) {
+	c.remaining_nfts = nfts;
+    }
+
+    #[test_only]
+    public(package) fun set_remaining_mythic(c: &mut BeelieversCollection, remaining_mythic: u64) {
+	c.remaining_mythic = remaining_mythic;
+    }
+
+
 }
