@@ -255,7 +255,8 @@ public fun pause_minting(_admin_cap: &AdminCap, collection: &mut BeelieversColle
     collection.minting_active = false;
 }
 
-public fun set_treasury(
+#[allow(lint(public_entry))]
+public entry fun set_treasury(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     treasury_address: address,
