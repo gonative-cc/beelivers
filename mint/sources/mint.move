@@ -263,14 +263,6 @@ public fun set_treasury(
     collection.treasury_address = treasury_address;
 }
 
-public fun set_premint_completed(
-    _admin_cap: &AdminCap,
-    collection: &mut BeelieversCollection,
-    completed: bool,
-) {
-    collection.premint_completed = completed;
-}
-
 public fun set_bulk_preset_badges(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
@@ -623,10 +615,6 @@ public fun get_total_supply(): u64 { TOTAL_SUPPLY }
 public fun get_mythic_supply(): u64 { MYTHIC_SUPPLY }
 
 public fun get_normal_supply(): u64 { NORMAL_SUPPLY }
-
-public fun is_premint_completed(collection: &BeelieversCollection): bool {
-    collection.premint_completed
-}
 
 public fun is_minting_active(collection: &BeelieversCollection): bool {
     collection.minting_active
