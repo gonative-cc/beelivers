@@ -5,7 +5,7 @@ edition = "2024.beta"
 authors = ["Native", "@null"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
 beelivers_auction = { local = "../beelivers_auction/" }
 # beelivers_auction = { git = "https://github.com/gonative-cc/beelivers.git", subdir = "beelivers_auction", rev = "release/auction/v1.0" }
 

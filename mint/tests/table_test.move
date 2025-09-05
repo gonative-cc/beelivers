@@ -31,3 +31,12 @@ fun test_badges_update() {
     sui::test_utils::destroy(o);
     ts.end();
 }
+
+
+#[test]
+fun test_u64_to_string() {
+    assert!(1u64.to_string() == b"1".to_string());
+    assert!(0u64.to_string() == b"0".to_string());
+    assert!(16u64.to_string() == b"16".to_string());
+    assert!(12345678u64.to_string() == b"12345678".to_string());
+}

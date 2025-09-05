@@ -1,4 +1,4 @@
-//@author - null
+//@author - native and deadlabs
 #[allow(lint(public_random))]
 module beelievers_mint::mint {
     use sui::clock::{Self, Clock};
@@ -124,7 +124,7 @@ module beelievers_mint::mint {
             mint_start_time: 0,
             mythic_eligible_list: table::new<address, bool>(ctx),
             minted_addresses: table::new<address, bool>(ctx),
-            remaining_mythic_eligible: 0, 
+            remaining_mythic_eligible: 0,
             auction_contract: @auction_addr,
             treasury_address: @treasury_address,
             nft_metadata: table::new<u64, NftMetadata>(ctx),
@@ -165,7 +165,7 @@ module beelievers_mint::mint {
     ): BeelieverNFT {
         let mut name = string::utf8(b"Beelievers #");
         string::append(&mut name, token_id.to_string());
-        
+
 
         let NftMetadata {url, mut attrs} = if (collection.nft_metadata.contains(token_id)) {
             collection.nft_metadata.remove(token_id)
@@ -212,7 +212,6 @@ module beelievers_mint::mint {
             string::utf8(b"unknown_badge")
         }
     }
-
 
     // NOTE: this must be called before minting
     public entry fun add_mythic_eligible(
@@ -288,7 +287,7 @@ module beelievers_mint::mint {
             } else {
                 table::add(&mut collection.preset_badges, addr, badge_list);
             };
-            
+
             index = index + 1;
         };
     }
@@ -305,13 +304,13 @@ module beelievers_mint::mint {
         while (index < vector::length(&badge_ids)) {
             let badge_id = *vector::borrow(&badge_ids, index);
             let badge_name = *vector::borrow(&badge_names, index);
-            
+
             if (table::contains(&collection.badge_names, badge_id)) {
                 *table::borrow_mut(&mut collection.badge_names, badge_id) = badge_name;
             } else {
                 table::add(&mut collection.badge_names, badge_id, badge_name);
             };
-            
+
             index = index + 1;
         };
     }
@@ -467,6 +466,7 @@ module beelievers_mint::mint {
             collection.remaining_nfts.swap_remove(probe_idx);
         };
 
+
         event::emit(NFTMinted {
             nft_id: object::id(&nft),
             token_id,
@@ -495,6 +495,7 @@ module beelievers_mint::mint {
         let mut i = 1;
         while (i <= NATIVE_MYTHICS ) {
             // NOTE: indexes for available tokens start from 0
+	    //
             let probe = g.generate_u64_in_range(0, collection.remaining_mythic-1);
             collection.mint_for_sender(probe, tp, kiosk, kiosk_cap, ctx);
             i = i+1;
@@ -587,7 +588,7 @@ module beelievers_mint::mint {
         sender: address,
         auction: &Auction,
     ): (bool, bool) {
-      
+
         if (is_mythic_eligible(collection, sender)) {
             return (true, true)
         };
@@ -673,5 +674,29 @@ module beelievers_mint::mint {
             assert!(vec[i]);
             i = i + 1;
         };
+    }
+
+    #[test_only]
+    public(package) fun witness_for_test(): MINT {
+	    return MINT {}
+    }
+
+    #[test_only]
+    public(package) fun init_for_testing(otw: MINT, ctx: &mut TxContext) {
+	    init(otw, ctx);
+    }
+    #[test_only]
+    public(package) fun nft_id(e: &NFTMinted): ID {
+	    e.nft_id
+    }
+
+    #[test_only]
+    public(package) fun token_id(e: &NFTMinted): u64 {
+	    e.token_id
+    }
+
+    #[test_only]
+    public(package) fun set_auction(c: &mut BeelieversCollection, addr: address) {
+	    c.auction_contract = addr;
     }
 }
