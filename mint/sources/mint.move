@@ -222,7 +222,7 @@ fun badge_number_to_name(collection: &BeelieversCollection, badge_id: u32): Stri
 }
 
 // NOTE: this must be called before minting
-public entry fun add_mythic_eligible(
+public fun add_mythic_eligible(
     _admin_cap: &AdminCap,
     c: &mut BeelieversCollection,
     mythic_eligible: vector<address>,
@@ -235,7 +235,7 @@ public entry fun add_mythic_eligible(
     })
 }
 
-public entry fun start_minting(
+public fun start_minting(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     start_time: u64,
@@ -251,11 +251,11 @@ public entry fun start_minting(
     });
 }
 
-public entry fun pause_minting(_admin_cap: &AdminCap, collection: &mut BeelieversCollection) {
+public fun pause_minting(_admin_cap: &AdminCap, collection: &mut BeelieversCollection) {
     collection.minting_active = false;
 }
 
-public entry fun set_treasury(
+public fun set_treasury(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     treasury_address: address,
@@ -263,7 +263,7 @@ public entry fun set_treasury(
     collection.treasury_address = treasury_address;
 }
 
-public entry fun set_premint_completed(
+public fun set_premint_completed(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     completed: bool,
@@ -271,7 +271,7 @@ public entry fun set_premint_completed(
     collection.premint_completed = completed;
 }
 
-public entry fun set_bulk_preset_badges(
+public fun set_bulk_preset_badges(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     addresses: vector<address>,
@@ -296,7 +296,7 @@ public entry fun set_bulk_preset_badges(
     };
 }
 
-public entry fun set_bulk_badge_names(
+public fun set_bulk_badge_names(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     badge_ids: vector<u32>,
@@ -344,7 +344,7 @@ public fun upsert_nft_badges(c: &BeelieversCollection, nft: &mut BeelieverNFT) {
     });
 }
 
-public entry fun set_nft_url(
+public fun set_nft_url(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_id: u64,
@@ -355,15 +355,15 @@ public entry fun set_nft_url(
     let url = url::new_unsafe_from_bytes(url_bytes);
 
     if (collection.nft_metadata.contains(nft_id)) {
-        let mut m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
+        let m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
         m.url = url;
     } else {
-        let mut m = NftMetadata { attrs: vec_map::empty<String, String>(), url };
+        let m = NftMetadata { attrs: vec_map::empty<String, String>(), url };
         table::add(&mut collection.nft_metadata, nft_id, m);
     };
 }
 
-public entry fun set_bulk_nft_urls(
+public fun set_bulk_nft_urls(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_ids: vector<u64>,
@@ -384,7 +384,7 @@ public entry fun set_bulk_nft_urls(
 }
 
 /// see set_nft_attributes documentation
-public entry fun set_bulk_nft_attributes(
+public fun set_bulk_nft_attributes(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_ids: vector<u64>,
@@ -413,7 +413,7 @@ public entry fun set_bulk_nft_attributes(
 /// sets attributes (metadata) for a given NFT. keys and values are lists that makes the
 /// key -> value mapping and has to have the same size.
 /// NOTE: It overwrites the previous set of attributes.
-public entry fun set_nft_attributes(
+public fun set_nft_attributes(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     nft_id: u64,
@@ -436,7 +436,7 @@ public entry fun set_nft_attributes(
     };
 
     if (collection.nft_metadata.contains(nft_id)) {
-        let mut m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
+        let m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
         m.attrs = attributes_map;
     } else {
         let mut m = empty_metadata();
@@ -481,7 +481,7 @@ fun mint_for_sender(
 }
 
 /// Mints (end_id - start_id + 1) NFTs to the
-public entry fun premint_to_native(
+public fun premint_to_native(
     _admin_cap: &AdminCap,
     collection: &mut BeelieversCollection,
     tp: &transfer_policy::TransferPolicy<BeelieverNFT>,
