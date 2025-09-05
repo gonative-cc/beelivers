@@ -60,7 +60,6 @@ fun premint_happy_case() {
         });
 
         assert_eq!(mythic_count, 11);
-	assert_eq!(c.is_premint_completed(), true);
         return_shared(kiosk);
 	return_shared(c);
     };

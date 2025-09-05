@@ -48,7 +48,10 @@ id = "beelivers_auction"
 source = { local = "../beelivers_auction" }
 
 dependencies = [
+  { id = "Bridge", name = "Bridge" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
 ]
 
 [move.toolchain-version]
@@ -62,4 +65,10 @@ flavor = "sui"
 chain-id = "f117859f"
 original-published-id = "0x347796ef863dc4b1ba5be7562a35ae43e0f88257f5e0b8f4f8d7d2026f322b7b"
 latest-published-id = "0x347796ef863dc4b1ba5be7562a35ae43e0f88257f5e0b8f4f8d7d2026f322b7b"
+published-version = "1"
+
+[env.localnet]
+chain-id = "75cbe003"
+original-published-id = "0x820a9b7dfa3aebe5df024b8c77f5d50e2a30869475b855a55698d085328bf94e"
+latest-published-id = "0x820a9b7dfa3aebe5df024b8c77f5d50e2a30869475b855a55698d085328bf94e"
 published-version = "1"

@@ -21,28 +21,58 @@ This directory contains the Beelievers NFT minting contract and complete setup i
 
 See the parent [../README](../README.md#dependencies)
 
-### Quick Start
+### Setup
 
-Setup:
+Install dependencies:
 
 ```sh
+cd mint
 bun install
 ```
 
-Run scripts
+Firstly we need to deploy auction:
 
 ```bash
-# Test environment setup
+cd ../beelievers_mint; sui client publish --gas-budget 500000000
+# NOTE: save the auction pkg ID
+set auction_pkg 0x...
+
+# create auction
+sui client ptb --move-call $auction_pkg::auction::create 30  --gas-budget 50000000
+set auction_id 0x...
+```
+
+Now we can publish mint package. During the `init` of the package, mint object is created and 
+shared publicly.
+
+```bash
+cd ../mint
+sui client publish --gas-budget 500000000
+```
+
+Copy IDs of the following objects PackageId, AdminCap, Collection, TransferPolicy, TransferPolicyCap, Publisher
+and past them in `setup_script.js`.
+Set the private key as well.
+
+For LOCALNET we need to deploy kiosk:
+
+``` bash
+git clone https://github.com/MystenLabs/apps.git sui-apps
+cd sui-apps/kiosk
+sui move publish
+set kiosk_pkg 0x...
+```
+
+
+
+### Run minting scripts
+
+```bash
+# localnet test
+node setup_script.js local
+
+# reduced testnet:
 node setup_script.js test
-
-# Production environment setup
-node setup_script.js production
-
-# Test minting functionality
-node setup_script.js test-minting
-
-# Set premint completed (for testing)
-node setup_script.js set-premint
 ```
 
 ### Command Options
