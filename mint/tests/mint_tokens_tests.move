@@ -31,7 +31,7 @@ fun create_auction_for_testing(mut scenario: Scenario): Scenario {
 }
 
 #[test]
-fun premint_for_native_happy_test_cases() {
+fun full_e2e_tests() {
     let mut scenario = test_scenario::begin(ADMIN);
     let witness = witness_for_test();
     init_for_testing(witness, scenario.ctx());
