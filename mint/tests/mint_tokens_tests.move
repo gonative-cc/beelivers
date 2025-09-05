@@ -87,23 +87,27 @@ fun premint_for_native_happy_test_cases() {
 
     scenario.next_tx(ADMIN);
     {
-	let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
-	let mut auction: Auction = scenario.take_shared();
-	let mut c: mint::BeelieversCollection = scenario.take_shared();
+        let admin_cap: AdminCap = scenario.take_from_address(ADMIN);
+        let mut auction: Auction = scenario.take_shared();
+        let mut c: mint::BeelieversCollection = scenario.take_shared();
 
-        auction.set_winners(vector::tabulate!(v, |i| i as u256).map!(|addr| sui::address::from_u256(addr)));
-	c.set_auction(object::id(&auction).to_address());
-	admin_cap.add_mythic_eligible(&mut c, vector::tabulate!(2750, |i| i as u256).map!(|addr| sui::address::from_u256(addr)));
-	admin_cap.start_minting(&mut c, 0);
-	return_shared(c);
+        auction.set_winners(vector::tabulate!(v, |i| i as u256).map!(
+            |addr| sui::address::from_u256(addr),
+        ));
+        c.set_auction(object::id(&auction).to_address());
+        admin_cap.add_mythic_eligible(
+            &mut c,
+            vector::tabulate!(2750, |i| i as u256).map!(|addr| sui::address::from_u256(addr)),
+        );
+        admin_cap.start_minting(&mut c, 0);
+        return_shared(c);
         return_shared(auction);
-	return_to_address(ADMIN, admin_cap);
-
+        return_to_address(ADMIN, admin_cap);
     };
 
     let result = vector::tabulate!(5810, |i| i as u256).map!(|minter| {
         let minter_addr: address = sui::address::from_u256(minter);
-	scenario.next_tx(minter_addr);
+        scenario.next_tx(minter_addr);
         scenario.next_tx(minter_addr);
         {
             let mut c: mint::BeelieversCollection = scenario.take_shared();
@@ -121,25 +125,25 @@ fun premint_for_native_happy_test_cases() {
             return_shared(auction);
 
             sui::test_utils::destroy(clock);
-	    sui::test_utils::destroy(kiosk);
-	    sui::test_utils::destroy(kiosk_cap);
-	    let events = events_by_type<NFTMinted>();
-	    assert_eq!(events.length(), 1);
-	    events[0]
+            sui::test_utils::destroy(kiosk);
+            sui::test_utils::destroy(kiosk_cap);
+            let events = events_by_type<NFTMinted>();
+            assert_eq!(events.length(), 1);
+            events[0]
         }
     });
 
     assert_eq!(result.length(), v);
-    let mc = result.count!(|token_event| {token_event.token_id() <= 21});
+    let mc = result.count!(|token_event| { token_event.token_id() <= 21 });
     assert_eq!(mc, 10);
 
     let mut ids = sui::table::new<u64, bool>(scenario.ctx());
     result.do!(|t| {
-	ids.add(t.token_id(), true)
+        ids.add(t.token_id(), true)
     });
 
     minted_events.do!(|t| {
-	ids.add(t.token_id(), true)
+        ids.add(t.token_id(), true)
     });
 
     sui::test_utils::destroy(ids);

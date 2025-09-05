@@ -32,7 +32,6 @@ fun test_badges_update() {
     ts.end();
 }
 
-
 #[test]
 fun test_u64_to_string() {
     assert!(1u64.to_string() == b"1".to_string());
