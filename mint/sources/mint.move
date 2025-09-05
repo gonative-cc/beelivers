@@ -213,23 +213,6 @@ module beelievers_mint::mint {
         }
     }
 
-    public(package) fun u64_to_string(value: u64): String {
-        if (value == 0) {
-            return string::utf8(b"0")
-        };
-
-        let mut buffer = vector::empty<u8>();
-        let mut temp_value = value;
-
-        while (temp_value != 0) {
-            vector::push_back(&mut buffer, ((temp_value % 10 + 48) as u8));
-            temp_value = temp_value / 10;
-        };
-
-        vector::reverse(&mut buffer);
-        string::utf8(buffer)
-    }
-
     // NOTE: this must be called before minting
     public entry fun add_mythic_eligible(
         _admin_cap: &AdminCap,
