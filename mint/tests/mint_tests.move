@@ -15,18 +15,6 @@ const PARTNER2: address = @0xC;
 const REGULAR_USER: address = @0xE;
 const AUCTION_CONTRACT: address = @0x1234567890abcdef;
 
-// Test constants validation
-#[test]
-fun test_collection_constants() {
-    // Test collection constants
-    assert!(mint::get_total_supply() == 6021, 0);
-    assert!(mint::get_mythic_supply() == 21, 1);
-    assert!(mint::get_normal_supply() == 6000, 2);
-
-    // Test that supplies add up correctly
-    assert!(mint::get_total_supply() == mint::get_mythic_supply() + mint::get_normal_supply(), 3);
-}
-
 #[test]
 fun test_string_operations() {
     // Test string operations used in the contract

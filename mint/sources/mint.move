@@ -638,11 +638,22 @@ public(package) fun nft_id(e: &NFTMinted): ID {
 }
 
 #[test_only]
-public(package) fun token_id(e: &NFTMinted): u64 {
+public(package) fun token_id(e: &NFTMinted): u16 {
     e.token_id
 }
 
 #[test_only]
 public(package) fun set_auction(c: &mut BeelieversCollection, addr: address) {
     c.auction_contract = addr;
+}
+
+#[test]
+public fun test_vecmap() {
+    let mut attrs = vec_map::empty<String, String>();
+    let key = b"Family".to_string();
+    let val = b"test_fam".to_string();
+    attrs.insert(key, val);
+
+    assert!(attrs.contains(&key));
+    assert!(attrs[&key] == val);
 }

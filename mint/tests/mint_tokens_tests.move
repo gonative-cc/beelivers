@@ -137,7 +137,7 @@ fun premint_for_native_happy_test_cases() {
     let mc = result.count!(|token_event| { token_event.token_id() <= 21 });
     assert_eq!(mc, 10);
 
-    let mut ids = sui::table::new<u64, bool>(scenario.ctx());
+    let mut ids = sui::table::new<u16, bool>(scenario.ctx());
     result.do!(|t| {
         ids.add(t.token_id(), true)
     });
