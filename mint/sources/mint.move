@@ -4,6 +4,7 @@ module beelievers_mint::mint;
 
 use beelivers_auction::auction::{Self, Auction};
 use std::string::{Self, String};
+use std::ascii;
 use sui::clock::{Self, Clock};
 use sui::display;
 use sui::event;
@@ -49,12 +50,12 @@ public struct AdminCap has key, store {
 }
 
 public struct NftMetadata has store {
-    image_id: vector<u8>,
+    image_id: ascii::String,
     attrs: VecMap<String, String>,
 }
 
 public(package) fun empty_metadata(): NftMetadata {
-    NftMetadata { attrs: vec_map::empty<String, String>(), image_id: b"" }
+    NftMetadata { attrs: vec_map::empty<String, String>(), image_id: b"".to_ascii_string() }
 }
 
 public struct AttrBadge has store {
@@ -102,7 +103,7 @@ public struct BeelieversCollection has key {
 public struct BeelieverNFT has key, store {
     id: UID,
     name: String,
-    image_id: vector<u8>,
+    image_id: ascii::String,
     attributes: VecMap<String, String>,
     token_id: u16,
     badges: vector<String>,
@@ -147,7 +148,7 @@ fun init(witness: MINT, ctx: &mut TxContext) {
     );
     display::add(
         &mut nft_display,
-        string::utf8(b"image_id"),
+        string::utf8(b"image_url"),
         string::utf8(b"https://walrus.tusky.io/{image_id}"),
     );
     display::add(&mut nft_display, string::utf8(b"attributes"), string::utf8(b"{attributes}"));
@@ -346,9 +347,9 @@ public fun set_nft_image(
 
     if (collection.nft_metadata.contains(nft_id)) {
         let m = table::borrow_mut(&mut collection.nft_metadata, nft_id);
-        m.image_id = image_id;
+        m.image_id = image_id.to_ascii_string();
     } else {
-        let m = NftMetadata { attrs: vec_map::empty<String, String>(), image_id };
+        let m = NftMetadata { attrs: vec_map::empty<String, String>(), image_id: image_id.to_ascii_string() };
         table::add(&mut collection.nft_metadata, nft_id, m);
     };
 }
